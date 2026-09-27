@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://json.schemastore.org/dependabot-2.0.json
+# for info on above comment: https://github.com/dependabot/dependabot-core/issues/4605#issuecomment-2435660718
+
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 2
+    # Yields `ci(deps): ...` titles, which pass the conventional commit check.
+    commit-message:
+      prefix: "ci"
+      include: "scope"

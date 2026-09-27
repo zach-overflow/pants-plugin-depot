@@ -1,0 +1,66 @@
+[GLOBAL]
+backend_packages = [
+  "pants.backend.build_files.fmt.ruff",
+  # For `vcs_version` (setuptools-scm-derived versions from git tags).
+  "pants.backend.experimental.python",
+  "pants.backend.experimental.python.lint.ruff.check",
+  "pants.backend.experimental.python.lint.ruff.format",
+  "pants.backend.experimental.tools.yamllint",
+  "pants.backend.plugin_development",
+  "pants.backend.python",
+  "pants.backend.python.typecheck.mypy",
+  "pants.backend.shell",
+  "pants.backend.shell.lint.shellcheck",
+  "pants.backend.shell.lint.shfmt",
+  "pants.backend.tools.taplo",
+]
+pants_version = "2.33.1"
+build_patterns = ["BUILD", "BUILD.*"]
+colors = true
+pants_ignore = [".*/", "/dist/", "__pycache__", "!.github/"]
+
+[changed]
+dependents = "transitive"
+
+[source]
+# `/` roots the top-level `tests/` dir so it imports as the `tests` package.
+root_patterns = ["/src", "/"]
+
+[tailor]
+build_file_name = "BUILD"
+
+[taplo]
+glob_pattern = ["**/*.toml", "!.taplo.toml", "!taplo.toml"]
+
+[cli.alias]
+--all-changed = "--changed-since=HEAD --changed-dependents=transitive"
+
+[python-bootstrap]
+search_path = ["<PYENV>", "<ASDF>", "<PATH>"]
+
+[python]
+resolver = "pex"
+enable_resolves = true
+default_resolve = "plugin-resolve"
+# Pants 2.33 itself runs on CPython 3.14, so plugin code must too.
+interpreter_constraints = ["CPython>=3.14,<3.15"]
+interpreter_versions_universe = ["3.14", "3.15"]
+default_to_resolve_interpreter_constraints = true
+pip_version = "latest"
+separate_lockfile_metadata_file = true
+
+[python.resolves]
+"plugin-resolve" = "3rdparty/python/plugin-lockfile.json"
+
+[mypy]
+config = "pyproject.toml"
+
+[pytest]
+config = "pyproject.toml"
+
+[update-build-files]
+fmt = true
+formatter = "ruff"
+
+[yamllint]
+config_file_name = ".yamllint.yaml"

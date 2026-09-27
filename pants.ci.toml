@@ -1,0 +1,8 @@
+# CI-only overrides layered on top of pants.toml; enabled via `PANTS_CONFIG_FILES=pants.ci.toml`.
+
+[GLOBAL]
+colors = true
+dynamic_ui = false
+
+[stats]
+log = true
