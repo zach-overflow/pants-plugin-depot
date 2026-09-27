@@ -146,6 +146,5 @@ addopts = [
 ]
 
 [tool.mypy]
-python_version = "3.14"
 explicit_package_bases = true
 namespace_packages = true
