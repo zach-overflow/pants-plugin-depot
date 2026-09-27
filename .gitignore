@@ -216,3 +216,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# pants
+.pants.d/
+.pids/
+.pants.workdir.file_lock*
+
+# MacOS
+*.DS_Store
+
+# vscode
+.vscode

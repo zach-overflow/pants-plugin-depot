@@ -1,0 +1,158 @@
+name: Publish
+run-name: Publish ${{ inputs.version && format('v{0}', inputs.version) || github.ref_name }}
+
+# Builds and publishes the wheel from a `vMAJOR.MINOR.PATCH` tag. Normally dispatched by the Release
+# workflow right after it creates the tag (`workflow_dispatch` is the one trigger the built-in
+# GITHUB_TOKEN may fire — it cannot fire `push`; and a `workflow_call` hand-off would break PyPI trusted
+# publishing, which rejects reusable workflows). The `push` trigger covers manually pushed release tags.
+on:
+  push:
+    tags:
+      - 'v[0-9]*.[0-9]*.[0-9]*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release semver (MAJOR.MINOR.PATCH, no leading v); the tag vVERSION must already exist.'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# Never let two publishes of the same version run concurrently.
+concurrency:
+  group: publish-${{ inputs.version || github.ref_name }}
+  cancel-in-progress: false
+
+# Layer CI-only overrides on top of pants.toml for every Pants invocation below (see pants.ci.toml).
+env:
+  PANTS_CONFIG_FILES: pants.ci.toml
+
+jobs:
+  setup:
+    name: Resolve release version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Validate the release version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          version="${INPUT_VERSION:-${GITHUB_REF_NAME#v}}"
+          if [[ ! "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::'${version}' is not an exact MAJOR.MINOR.PATCH release version - nothing to \
+          publish. Release tags must be created via the Release workflow."
+            exit 1
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+  build-wheel:
+    name: Build wheel
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      # Checking out the tag (with full history + tags) is what versions the wheel: Pants' `vcs_version`
+      # target runs setuptools-scm against this checkout, yielding the exact `MAJOR.MINOR.PATCH`.
+      - name: Checkout release tag
+        uses: actions/checkout@v4
+        with:
+          ref: v${{ needs.setup.outputs.version }}
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Initialize Pants
+        uses: pantsbuild/actions/init-pants@v11
+        with:
+          gha-cache-key: v0
+          named-caches-hash: ${{ hashFiles('3rdparty/**/*-lockfile.json') }}
+          cache-lmdb-store: 'true'
+
+      - name: Build wheel
+        env:
+          VERSION: ${{ needs.setup.outputs.version }}
+        run: |
+          pants package //:plugin-whl
+          ls -l "dist/pyproject_fmt_pants_plugin-${VERSION}-py3-none-any.whl"
+
+      - name: Upload wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel
+          path: dist/pyproject_fmt_pants_plugin-${{ needs.setup.outputs.version }}-py3-none-any.whl
+          if-no-files-found: error
+
+      - name: Upload Pants log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pants-log
+          path: .pants.d/workdir/pants.log
+
+  publish-pypi:
+    name: Publish to PyPI
+    needs: build-wheel
+    runs-on: ubuntu-latest
+    # The `pypi` environment the PyPI trusted publisher is registered against (gates publishing here only).
+    environment: pypi
+    permissions:
+      contents: read
+      id-token: write # mint the OIDC token PyPI exchanges for a short-lived, project-scoped API token
+    steps:
+      - name: Download wheel
+        uses: actions/download-artifact@v4
+        with:
+          name: wheel
+          path: dist
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist
+          # Don't fail a re-run if the upload already succeeded (e.g. `publish-release` flaked).
+          skip-existing: true
+
+  # Attach the wheel to the DRAFT release that Release's `approve-and-tag` created, then publish it.
+  # Releases are immutable once published (assets + tag locked), so the asset must land while it is still
+  # a draft; against an already-published release this job only verifies the wheel is attached.
+  publish-release:
+    name: Attach the wheel and publish the GitHub release
+    needs: [setup, publish-pypi]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # `gh release upload` attaches the asset to the draft; `gh release edit` publishes it
+    steps:
+      - name: Download wheel
+        uses: actions/download-artifact@v4
+        with:
+          name: wheel
+          path: dist
+
+      - name: Attach the wheel to the draft release and publish it
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.setup.outputs.version }}
+        run: |
+          tag="v${VERSION}"
+          wheel_name="pyproject_fmt_pants_plugin-${VERSION}-py3-none-any.whl"
+          ls -l "dist/${wheel_name}"
+          if ! release="$(gh release view "${tag}" --repo "${GITHUB_REPOSITORY}" --json isDraft,assets)"; then
+            echo "::error::No GitHub release exists for tag ${tag}. Release tags must be created via the \
+          Release workflow, whose approve-and-tag job drafts the release before dispatching Publish."
+            exit 1
+          fi
+          if [[ "$(jq -r '.isDraft' <<< "${release}")" == "false" ]]; then
+            if ! jq -e --arg name "${wheel_name}" '.assets | any(.name == $name)' <<< "${release}" > /dev/null; then
+              echo "::error::Release ${tag} is already published and immutable but lacks ${wheel_name}. \
+          Assets cannot be added after publication; cut a new release."
+              exit 1
+            fi
+            echo "::notice::Release ${tag} is already published with ${wheel_name}; nothing to do."
+            exit 0
+          fi
+          gh release upload "${tag}" "dist/${wheel_name}" --repo "${GITHUB_REPOSITORY}" --clobber
+          gh release edit "${tag}" --repo "${GITHUB_REPOSITORY}" --draft=false
+          echo "::notice::Published release ${tag} with ${wheel_name} attached."
