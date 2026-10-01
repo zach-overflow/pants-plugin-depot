@@ -2,8 +2,8 @@ tag_prefix = "v"
 from_latest_tag = true
 ignore_merge_commits = false
 ignore_fixup_commits = false
-disable_changelog = true
-disable_bump_commit = true
+# Every plugin is versioned on its own: tags are `<plugin-name>-vX.Y.Z` and there is no repo-wide version.
+generate_mono_repository_global_tag = false
 branch_whitelist = ["main"]
 pre = "alpha.*"
 scopes = [
@@ -13,36 +13,48 @@ scopes = [
   "dev",
   "goals",
   "hooks",
+  "pyproject-fmt-plugin",
   "rules",
   "subsystem",
   "targets",
+  "version",
 ]
 skip_ci = "[skip ci]"
 skip_untracked = false
 pre_bump_hooks = []
-post_bump_hooks = ["git push origin {{version_tag}}"]
+post_bump_hooks = []
+# Package hooks run inside the plugin's directory. The `grep` fails the bump if `sed` matched nothing.
+pre_package_bump_hooks = [
+  '''sed -i.bak -E 's/^version = "[^"]*"$/version = "{{version}}"/' pyproject.toml && rm pyproject.toml.bak''',
+  '''grep -qx 'version = "{{version}}"' pyproject.toml''',
+]
+post_package_bump_hooks = []
 
 [git_hooks]
 
 [commit_types]
 feat = { changelog_title = "Features", order = 1 }
 fix = { changelog_title = "Bug Fixes", order = 2 }
-perf = { changelog_title = "Performance Improvements", order = 3, bump_level = "Patch" }
+perf = { changelog_title = "Performance Improvements", order = 3, bump_patch = true }
 docs = { changelog_title = "Documentation", order = 4 }
 build = { changelog_title = "Internal Tooling / Development", order = 5 }
 ci = { changelog_title = "Internal Tooling / Development", order = 5 }
 test = { changelog_title = "Internal Tooling / Development", order = 5 }
 chore = { changelog_title = "Internal Tooling / Development", order = 5 }
 style = { changelog_title = "Internal Tooling / Development", order = 5 }
-refactor = { changelog_title = "Internal Tooling / Development", order = 5, bump_level = "Patch" }
+refactor = { changelog_title = "Internal Tooling / Development", order = 5, bump_patch = true }
 revert = { changelog_title = "Revert", omit_from_changelog = true }
 
 [changelog]
 path = "CHANGELOG.md"
 template = ".cog/changelog-template.tera"
+package_template = ".cog/changelog-template.tera"
 remote = "github.com"
 owner = "zach-overflow"
-repository = "pyproject-fmt-pantsbuild-plugin"
+repository = "pants-plugin-depot"
 authors = [{ username = "zach-overflow", signature = "Zach" }]
 
 [bump_profiles]
+
+[monorepo.packages.pyproject-fmt-plugin]
+path = "pyproject-fmt-plugin"

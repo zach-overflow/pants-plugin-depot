@@ -3,17 +3,17 @@ run-name: Release from ${{ github.ref_name }} by ${{ github.actor }}
 
 # One-click release flow (no draft release needed — versioning is driven by conventional commits):
 #   1. Run this workflow (Actions -> Release -> Run workflow, from the default branch). It checks the
-#      commits since the latest `vX.Y.Z` tag are conventional and warrant a bump (cog.toml sets
-#      `from_latest_tag`/`tag_prefix`), then validates the repo and builds the wheel WITHOUT publishing
-#      anything.
-#   2. `cog bump --auto` then computes the next semver from the conventional commits and tags the
-#      validated commit `vX.Y.Z` (tag-only: `disable_bump_commit` in cog.toml means nothing is ever pushed
-#      to the branch, so `main` protection rules never conflict). The tag is pushed via the
-#      `post_bump_hooks` in cog.toml, a DRAFT GitHub release is created with the cog-generated changelog as
-#      its body, and the Publish workflow is dispatched (see the `publish` job below for why it is
-#      dispatched rather than `push`-triggered or called as a reusable workflow). Publish attaches the
-#      wheel to the draft and only then publishes it: releases are immutable once published (assets + tag
-#      locked), so nothing may alter a release after the fact.
+#      commits since the latest tag are conventional and that at least one plugin warrants a bump, then
+#      validates the repo and builds the wheels WITHOUT publishing anything.
+#   2. `cog bump --auto` then bumps every plugin whose files changed (cog.toml lists them under
+#      `[monorepo.packages]`). Per bumped plugin it rewrites `version` in `<plugin-name>/pyproject.toml`,
+#      updates `<plugin-name>/CHANGELOG.md`, and tags `<plugin-name>-vX.Y.Z`. All of it lands in ONE
+#      `chore(version): bump packages` commit, which is pushed to the default branch with the tags.
+#   3. Per tag, a DRAFT GitHub release is created with that plugin's changelog section as its body, and
+#      the Publish workflow is dispatched (see the `publish` job below for why it is dispatched rather than
+#      `push`-triggered or called as a reusable workflow). Publish attaches the wheel to the draft and only
+#      then publishes it: releases are immutable once published (assets + tag locked), so nothing may
+#      alter a release after the fact.
 on:
   workflow_dispatch:
 
@@ -47,32 +47,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          # cog needs the full history and tags to find the latest release tag.
+          # cog needs the full history and tags to find each plugin's latest release tag.
           fetch-depth: 0
       - name: Check commits since the latest tag are conventional
         uses: cocogitto/cocogitto-action@v4.2.0
         with:
           command: check
-      # cog exits 0 and prints a sentence instead of a version when no commit warrants a bump.
-      - name: Compute the pending release version (dry run)
+      # cog exits 0 and prints a sentence instead of tags when no plugin warrants a bump.
+      - name: Compute the pending release tags (dry run)
         run: |
-          version="$(cog bump --auto --dry-run)"
-          if [[ ! "${version}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::No commit since the latest tag warrants a release (cog printed '${version}')."
+          pending="$(cog bump --auto --dry-run)"
+          if ! grep -Eq '^[a-z0-9][a-z0-9-]*-v[0-9]+\.[0-9]+\.[0-9]+$' <<< "${pending}"; then
+            echo "::error::No plugin has a commit that warrants a release (cog printed '${pending}')."
             exit 1
           fi
-          echo "::notice::Validating ${GITHUB_SHA} for release ${version}."
+          echo "::notice::Validating ${GITHUB_SHA} for release: ${pending//$'\n'/ }"
 
   validate:
-    name: Pants validate + build wheel
+    name: Pants validate + build wheels
     needs: check-commits
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          # Full history and tags so `vcs_version` (setuptools-scm) can derive a version.
-          fetch-depth: 0
 
       - name: Lint GitHub Actions workflows
         # No Pants backend for actionlint, so the shared hook runs it directly (downloads a pinned binary).
@@ -100,17 +97,12 @@ jobs:
         run: |
           pants lint check test ::
 
-      # Validation-only build (the Publish workflow rebuilds from the tag). The tag doesn't exist yet, so
-      # the wheel carries a dev version; the `_version.py` placeholder would mean the `vcs_version` wiring
-      # broke.
-      - name: Build wheel
+      # Validation-only build (the Publish workflow rebuilds from each tag). The bump has not happened yet,
+      # so these wheels still carry the previously released versions.
+      - name: Build wheels
         run: |
-          pants package //:plugin-whl
-          ls -l dist/pyproject_fmt_pants_plugin-*.whl
-          if compgen -G "dist/pyproject_fmt_pants_plugin-0.0.0.dev0-*.whl" > /dev/null; then
-            echo "::error::The wheel carries the placeholder version 0.0.0.dev0."
-            exit 1
-          fi
+          pants package ::
+          ls -l dist/*.whl
 
       - name: Upload Pants log
         if: always()
@@ -119,68 +111,96 @@ jobs:
           name: pants-log
           path: .pants.d/workdir/pants.log
 
-  # `cog bump --auto` computes the version and pushes the `vX.Y.Z` tag, which lands directly on the
-  # validated commit (`disable_bump_commit` — no commit is created, so nothing is pushed to `main`). The
-  # GitHub release is created as a draft: releases are immutable once published, so Publish's
-  # `publish-release` attaches the wheel first, then publishes it.
+  # `cog bump --auto` commits the version and changelog changes on top of the validated commit and tags
+  # that commit once per bumped plugin. The GitHub releases are created as drafts: releases are immutable
+  # once published, so Publish's `publish-release` attaches the wheel first, then publishes it.
   approve-and-tag:
-    name: Approve, tag, and draft release
+    name: Approve, bump, tag, and draft releases
     needs: [check-commits, validate]
     runs-on: ubuntu-latest
     environment: release
     permissions:
       contents: write
     outputs:
-      version: ${{ steps.github-release.outputs.version }}
+      tags: ${{ steps.push.outputs.tags }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Compute the version and push the release tag
-        id: bump
+          # The default branch requires pull requests, which the built-in GITHUB_TOKEN cannot bypass.
+          # RELEASE_TOKEN belongs to a repo admin (admins are exempt), and checkout persists it for the
+          # `git push` below.
+          token: ${{ secrets.RELEASE_TOKEN }}
+      - name: Require the validated commit
+        run: |
+          if [[ "$(git rev-parse HEAD)" != "${GITHUB_SHA}" ]]; then
+            echo "::error::'${GITHUB_REF_NAME}' moved past the validated commit ${GITHUB_SHA}. Re-run the release."
+            exit 1
+          fi
+      - name: Bump versions, update changelogs, and tag
         uses: cocogitto/cocogitto-action@v4.2.0
         with:
           command: bump
           args: --auto
-      # The action reports the newest existing tag even when cog created none, so confirm it is on HEAD.
-      - name: Draft the GitHub release
-        id: github-release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION_TAG: ${{ steps.bump.outputs.version }}
+      # Atomic: the branch and every tag move together or not at all.
+      - name: Push the bump commit and the release tags
+        id: push
         run: |
-          if [[ "$(git rev-list -n 1 "${VERSION_TAG}")" != "$(git rev-parse HEAD)" ]]; then
-            echo "::error::Tag '${VERSION_TAG}' does not point at ${GITHUB_SHA}: cog did not tag this commit."
+          mapfile -t tags < <(git tag --points-at HEAD)
+          if [[ "$(git rev-parse HEAD)" == "${GITHUB_SHA}" || "${#tags[@]}" -eq 0 ]]; then
+            echo "::error::cog created no bump commit or no tag on top of ${GITHUB_SHA}."
             exit 1
           fi
-          cog changelog --at "${VERSION_TAG}" > GITHUB_CHANGELOG.md
-          gh release create "${VERSION_TAG}" \
-            --title "${VERSION_TAG#v}" \
-            --notes-file GITHUB_CHANGELOG.md \
-            --verify-tag \
-            --draft
-          echo "version=${VERSION_TAG#v}" >> "$GITHUB_OUTPUT"
-          echo "::notice::Tagged $(git rev-parse HEAD) as ${VERSION_TAG} and drafted the GitHub release; \
+          git push --atomic origin "HEAD:${GITHUB_REF_NAME}" "${tags[@]}"
+          echo "tags=${tags[*]}" >> "$GITHUB_OUTPUT"
+      # A tag is `<plugin-name>-vX.Y.Z`, and the plugin's directory carries the same name. Its notes are
+      # the newest section of `<plugin-name>/CHANGELOG.md`: from the tag's heading to the next `- - -`.
+      - name: Draft the GitHub releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAGS: ${{ steps.push.outputs.tags }}
+        run: |
+          read -ra tags <<< "${TAGS}"
+          for tag in "${tags[@]}"; do
+            package="${tag%-v*}"
+            awk -v heading="## [${tag}]" '
+              index($0, heading) == 1 { found = 1; next }
+              found && /^- - -$/ { exit }
+              found { print }
+            ' "${package}/CHANGELOG.md" > release-notes.md
+            if ! grep -q '[^[:space:]]' release-notes.md; then
+              echo "::error::Found no section for ${tag} in ${package}/CHANGELOG.md."
+              exit 1
+            fi
+            gh release create "${tag}" \
+              --title "${package} ${tag##*-v}" \
+              --notes-file release-notes.md \
+              --verify-tag \
+              --draft
+            echo "::notice::Tagged $(git rev-parse HEAD) as ${tag} and drafted the GitHub release; \
           Publish attaches the wheel and publishes it."
+          done
 
   # Dispatch (not `workflow_call`) so Publish runs as its own top-level workflow: PyPI trusted publishing
-  # rejects reusable workflows, and its registered publisher is pinned to `publish.yml`. `workflow_dispatch`
-  # is exempt from GitHub's "GITHUB_TOKEN events don't create workflow runs" recursion guard (a `push` of
-  # the tag with GITHUB_TOKEN is not, which is why the tag itself can't trigger Publish here).
+  # rejects reusable workflows, and each plugin's registered publisher is pinned to `publish.yml`. One run
+  # is dispatched per tag, after its draft release exists.
   publish:
-    name: Dispatch publish workflow
+    name: Dispatch publish workflows
     needs: approve-and-tag
     runs-on: ubuntu-latest
     permissions:
       actions: write
     steps:
-      - name: Trigger publish.yml for v${{ needs.approve-and-tag.outputs.version }}
+      - name: Trigger publish.yml for each release tag
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ needs.approve-and-tag.outputs.version }}
+          TAGS: ${{ needs.approve-and-tag.outputs.tags }}
         run: |
-          gh workflow run publish.yml \
-            --repo "${GITHUB_REPOSITORY}" \
-            --ref "v${VERSION}" \
-            -f version="${VERSION}"
+          read -ra tags <<< "${TAGS}"
+          for tag in "${tags[@]}"; do
+            gh workflow run publish.yml \
+              --repo "${GITHUB_REPOSITORY}" \
+              --ref "${tag}" \
+              -f tag="${tag}"
+          done

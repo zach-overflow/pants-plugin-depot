@@ -9,7 +9,7 @@ ACTIONLINT_VERSION="1.7.12"
 if command -v actionlint >/dev/null 2>&1; then
 	actionlint_bin="actionlint"
 else
-	cache_dir="${XDG_CACHE_HOME:-${HOME}/.cache}/pyproject-fmt-pants-plugin/actionlint-${ACTIONLINT_VERSION}"
+	cache_dir="${XDG_CACHE_HOME:-${HOME}/.cache}/pants-plugin-depot/actionlint-${ACTIONLINT_VERSION}"
 	actionlint_bin="${cache_dir}/actionlint"
 	if [[ ! -x "${actionlint_bin}" ]]; then
 		echo "actionlint not on PATH; downloading pinned v${ACTIONLINT_VERSION} into ${cache_dir} ..." >&2
