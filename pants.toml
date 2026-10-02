@@ -1,8 +1,6 @@
 [GLOBAL]
 backend_packages = [
   "pants.backend.build_files.fmt.ruff",
-  # For `vcs_version` (setuptools-scm-derived versions from git tags).
-  "pants.backend.experimental.python",
   "pants.backend.experimental.python.lint.ruff.check",
   "pants.backend.experimental.python.lint.ruff.format",
   "pants.backend.experimental.tools.yamllint",
@@ -23,8 +21,8 @@ pants_ignore = [".*/", "/dist/", "__pycache__", "!.github/"]
 dependents = "transitive"
 
 [source]
-# `/` roots the top-level `tests/` dir so it imports as the `tests` package.
-root_patterns = ["/src", "/"]
+# Each plugin lives in `<plugin-name>/` with its own `src/` and `tests/` roots.
+root_patterns = ["/*/src", "/*/tests"]
 
 [tailor]
 build_file_name = "BUILD"
@@ -52,10 +50,16 @@ separate_lockfile_metadata_file = true
 [python.resolves]
 "plugin-resolve" = "3rdparty/python/plugin-lockfile.json"
 
+[python-infer]
+# Plugins share one resolve but each declares its own requirements. When two plugins declare the same
+# requirement, an import resolves to the target in the importing plugin's own directory.
+ambiguity_resolution = "by_source_root"
+
 [mypy]
 config = "pyproject.toml"
 
 [pytest]
+args = ["-vv"]
 config = "pyproject.toml"
 
 [update-build-files]

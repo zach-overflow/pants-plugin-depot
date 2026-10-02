@@ -1,11 +1,10 @@
 name: Build
 run-name: Build ${{ github.ref }} by ${{ github.actor }}
 on:
+  # Branches only: release tags (`<plugin-name>-vX.Y.Z`) are built by the Publish workflow.
   push:
     branches:
       - '**'
-    tags-ignore:
-      - 'v*'
 
 # Layer CI-only overrides on top of pants.toml for every Pants invocation below (see pants.ci.toml).
 env:
@@ -20,9 +19,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          # Full history and tags so `vcs_version` (setuptools-scm) and `--changed-since` both work.
-          fetch-depth: 0
 
       - name: Lint GitHub Actions workflows
         # No Pants backend for actionlint, so the shared hook runs it directly (downloads a pinned binary).
@@ -50,15 +46,10 @@ jobs:
         run: |
           pants lint check test ::
 
-      # The `_version.py` placeholder version would mean the `vcs_version` wiring broke.
-      - name: Build wheel
+      - name: Build wheels
         run: |
           pants package ::
-          ls -l dist/pyproject_fmt_pants_plugin-*.whl
-          if compgen -G "dist/pyproject_fmt_pants_plugin-0.0.0.dev0-*.whl" > /dev/null; then
-            echo "::error::The wheel carries the placeholder version 0.0.0.dev0."
-            exit 1
-          fi
+          ls -l dist/*.whl
 
       - name: Upload Pants log
         if: always()

@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=84.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyproject-fmt-pants-plugin"
+# Rewritten by `cog bump` (see the pre-bump hook in the root `cog.toml`). Do not edit by hand.
+version = "0.0.0"
+# Pants loads plugins into its own interpreter (CPython 3.14 as of Pants 2.33).
+requires-python = ">=3.14"
+# `pantsbuild.pants` is deliberately absent: Pants supplies itself at plugin load time and is not on PyPI.
+dependencies = []
+authors = [{ name = "Zach Gottesman" }]
+maintainers = [{ name = "zach-overflow" }]
+keywords = [
+  "formatter",
+  "pants",
+  "pants plugin",
+  "pantsbuild",
+  "pyproject-fmt",
+  "pyproject.toml",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Software Development :: Build Tools",
+  "Topic :: Software Development :: Quality Assurance",
+  "Typing :: Typed",
+]
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+description = "A Pantsbuild plugin for formatting pyproject.toml files with pyproject-fmt."
+readme = "README.md"
+
+[project.urls]
+Repository = "https://github.com/zach-overflow/pants-plugin-depot"
+"Bug Tracker" = "https://github.com/zach-overflow/pants-plugin-depot/issues"
+Changelog = "https://github.com/zach-overflow/pants-plugin-depot/blob/main/pyproject-fmt-plugin/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["pyproject_fmt_pants_plugin*"]
+
+[tool.setuptools.package-data]
+pyproject_fmt_pants_plugin = ["py.typed"]
+"pyproject_fmt_pants_plugin.lockfile_resource" = ["pyproject_fmt_lockfile.json"]

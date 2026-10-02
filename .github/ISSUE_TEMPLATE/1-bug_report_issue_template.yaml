@@ -28,9 +28,9 @@ body:
   - type: input
     id: plugin-version
     attributes:
-      label: pyproject-fmt-pants-plugin version
-      description: What version of the plugin are you running? Please specify fully (<major>.<minor>.<patch>).
-      placeholder: 0.1.0
+      label: Plugin and version
+      description: Which plugin are you running, and at what version? Please specify fully (<major>.<minor>.<patch>).
+      placeholder: pyproject-fmt-pants-plugin 0.1.0
     validations:
       required: true
   - type: input

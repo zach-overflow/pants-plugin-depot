@@ -23,4 +23,4 @@ body:
     attributes:
       label: Related issues
       description: Is there currently another issue associated with this?
-      placeholder: "Related: zach-overflow/pyproject-fmt-pantsbuild-plugin/issues/<Issue number here>"
+      placeholder: "Related: zach-overflow/pants-plugin-depot/issues/<Issue number here>"

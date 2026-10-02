@@ -1,56 +1,8 @@
-[build-system]
-requires = ["setuptools>=84.0.0"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "pyproject-fmt-pants-plugin"
-dynamic = ["version"]
-# Pants loads plugins into its own interpreter (CPython 3.14 as of Pants 2.32).
-requires-python = ">=3.14"
-# `pantsbuild.pants` is deliberately absent: Pants supplies itself at plugin load time and is not on PyPI.
-dependencies = []
-authors = [{ name = "Zach Gottesman" }]
-maintainers = [{ name = "zach-overflow" }]
-keywords = [
-  "formatter",
-  "pants",
-  "pants plugin",
-  "pantsbuild",
-  "pyproject-fmt",
-  "pyproject.toml",
-]
-classifiers = [
-  "Development Status :: 3 - Alpha",
-  "Intended Audience :: Developers",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.14",
-  "Topic :: Software Development :: Build Tools",
-  "Topic :: Software Development :: Quality Assurance",
-  "Typing :: Typed",
-]
-license = "Apache-2.0"
-license-files = ["LICENSE"]
-description = "A Pantsbuild plugin for formatting pyproject.toml files with pyproject-fmt."
-readme = "README.md"
-
-[project.urls]
-Repository = "https://github.com/zach-overflow/pyproject-fmt-pantsbuild-plugin"
-"Bug Tracker" = "https://github.com/zach-overflow/pyproject-fmt-pantsbuild-plugin/issues"
-Changelog = "https://github.com/zach-overflow/pyproject-fmt-pantsbuild-plugin/releases"
-
-[tool.setuptools.dynamic]
-version = { attr = "pyproject_fmt_pants_plugin._version.__version__" }
-
-[tool.setuptools.packages.find]
-where = ["src"]
-include = ["pyproject_fmt_pants_plugin*"]
-
-[tool.setuptools.package-data]
-pyproject_fmt_pants_plugin = ["py.typed"]
+# Repo-wide tool configuration. Each plugin's packaging metadata lives in `<plugin-name>/pyproject.toml`.
 
 [tool.ruff]
 target-version = "py314"
-src = ["src", "."]
+src = ["*/src", "*/tests"]
 line-length = 120
 indent-width = 4
 
@@ -112,7 +64,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["D101", "D107"]
+"*/tests/**/*.py" = ["D101", "D107"]
 
 [tool.ruff.lint.isort]
 split-on-trailing-comma = false
@@ -123,7 +75,10 @@ section-order = [
   "first-party",
   "local-folder",
 ]
-known-first-party = ["pyproject_fmt_pants_plugin", "tests"]
+known-first-party = [
+  "pyproject_fmt_pants_plugin",
+  "pyproject_fmt_pants_plugin_tests",
+]
 
 [tool.ruff.lint.pycodestyle]
 ignore-overlong-task-comments = true
