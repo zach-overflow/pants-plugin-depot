@@ -9,13 +9,17 @@ from pants.util.logging import LogLevel
 from pants.util.meta import classproperty
 
 from pyproject_fmt_pants_plugin.goals.common import (
-    PyprojectFmtMode, RunPyprojectFmtRequest, common_partition_pyproject_toml_inputs, run_pyproject_fmt_process
+    PyprojectFmtMode,
+    RunPyprojectFmtRequest,
+    common_partition_pyproject_toml_inputs,
+    run_pyproject_fmt_process,
 )
 from pyproject_fmt_pants_plugin.subsystem import PyprojectFmt
 
 
 class PyprojectFmtRequest(FmtFilesRequest):
     """Unique type for triggering a `pyproject-fmt` run as part of the `pants fmt` goal execution."""
+
     tool_subsystem = PyprojectFmt  # type: ignore[assignment]
 
     @classproperty
@@ -28,9 +32,7 @@ class PyprojectFmtRequest(FmtFilesRequest):
 
 
 @rule(desc="Partitions the `pyproject.toml` input files for formatting.", level=LogLevel.DEBUG)
-async def partition_inputs(
-    request: PyprojectFmtRequest.PartitionRequest, pyproject_fmt: PyprojectFmt
-) -> Partitions:
+async def partition_inputs(request: PyprojectFmtRequest.PartitionRequest, pyproject_fmt: PyprojectFmt) -> Partitions:
     return common_partition_pyproject_toml_inputs(pyproject_fmt.skip, request.files)
 
 

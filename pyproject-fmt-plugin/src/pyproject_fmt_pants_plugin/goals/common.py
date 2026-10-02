@@ -8,8 +8,8 @@ from pants.backend.python.util_rules.interpreter_constraints import InterpreterC
 from pants.backend.python.util_rules.pex import VenvPex, VenvPexProcess, create_venv_pex, setup_venv_pex_process
 from pants.core.util_rules.config_files import find_config_file
 from pants.core.util_rules.partitions import Partitions
-from pants.engine.fs import CreateDigest, Directory, MergeDigests, PathGlobs, Snapshot
-from pants.engine.intrinsics import create_digest, execute_process, get_digest_entries, merge_digests, path_globs_to_digest
+from pants.engine.fs import MergeDigests, PathGlobs
+from pants.engine.intrinsics import execute_process, get_digest_entries, merge_digests, path_globs_to_digest
 from pants.engine.process import FallibleProcessResult
 from pants.engine.rules import Rule, collect_rules, concurrently, implicitly, rule
 from pants.engine.unions import UnionRule
@@ -23,6 +23,7 @@ from pyproject_fmt_pants_plugin.subsystem import PyprojectFmt
 @unique
 class PyprojectFmtMode(StrEnum):
     """Supported modes for `pyproject-fmt`: check mode (fail if changes would occur), or fmt mode (apply changes)."""
+
     CHECK = "check"
     FORMAT = "format"
 
@@ -30,6 +31,7 @@ class PyprojectFmtMode(StrEnum):
 @dataclass(frozen=True)
 class RunPyprojectFmtRequest:
     """Wrapper for the unique details of a given `pyproject-fmt` run for either `fmt` or `lint` goals."""
+
     mode: PyprojectFmtMode
 
     @property
@@ -41,7 +43,6 @@ class RunPyprojectFmtRequest:
     def is_format(self) -> bool:
         """Returns `True` if running `pyproject-fmt` without the `--check` flag (via the `pants fmt` goal)."""
         return self.mode is PyprojectFmtMode.CHECK
-
 
 
 def common_partition_pyproject_toml_inputs(skip: bool, files: Iterable[str]) -> Partitions:
@@ -82,7 +83,7 @@ async def run_pyproject_fmt_process(
         raise ValueError(
             f"Expected exactly 1 shared `pyproject-fmt` config, but found {len(conf_filepaths)} shared configs."
         )
-    
+
     args: list[str] = ["--config", conf_filepaths[0]]
     if request.is_check:
         args.append("--check")
@@ -96,7 +97,9 @@ async def run_pyproject_fmt_process(
     subject_filepaths = tuple(sorted([entry.path for entry in subject_files_entries]))
     args.extend(list(subject_filepaths))
 
-    desc_txt = f"Run pyproject-fmt {'--check' if request.is_check else ''} on {pluralize(len(request.files), 'file')}."
+    desc_txt = (
+        f"Run pyproject-fmt {'--check' if request.is_check else ''} on {pluralize(len(subject_filepaths), 'file')}."
+    )
     venv_pex_process = await setup_venv_pex_process(
         VenvPexProcess(
             ppf_pex,

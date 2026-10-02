@@ -3,18 +3,23 @@
 from collections.abc import Iterable
 
 from pants.core.goals.lint import LintFilesRequest, LintResult, Partitions
-
 from pants.engine.rules import Rule, collect_rules, rule
 from pants.engine.unions import UnionRule
 from pants.util.logging import LogLevel
 from pants.util.meta import classproperty
 
-from pyproject_fmt_pants_plugin.goals.common import PyprojectFmtMode, RunPyprojectFmtRequest, common_partition_pyproject_toml_inputs, run_pyproject_fmt_process
+from pyproject_fmt_pants_plugin.goals.common import (
+    PyprojectFmtMode,
+    RunPyprojectFmtRequest,
+    common_partition_pyproject_toml_inputs,
+    run_pyproject_fmt_process,
+)
 from pyproject_fmt_pants_plugin.subsystem import PyprojectFmt
 
 
 class PyprojectFmtLintRequest(LintFilesRequest):
     """Request class for running `pyproject-fmt --check` as part of a `pants lint` call."""
+
     tool_subsystem = PyprojectFmt  # type: ignore[assignment]
 
     @classproperty
@@ -36,7 +41,7 @@ async def partition_inputs(
 @rule(desc="Run `pyproject-fmt --check` against `pyproject.toml` files.", level=LogLevel.DEBUG)
 async def run_pyproject_fmt_check(request: PyprojectFmtLintRequest.Batch, pyproject_fmt: PyprojectFmt) -> LintResult:
     result = await run_pyproject_fmt_process(RunPyprojectFmtRequest(mode=PyprojectFmtMode.CHECK), pyproject_fmt)
-    return await LintResult.create(request, result)
+    return LintResult.create(request, result)
 
 
 def rules() -> Iterable[Rule | UnionRule]:

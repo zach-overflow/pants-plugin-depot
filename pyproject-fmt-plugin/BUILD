@@ -13,7 +13,7 @@ python_distribution(
         "pyproject-fmt-plugin/src/pyproject_fmt_pants_plugin",
         "pyproject-fmt-plugin/src/pyproject_fmt_pants_plugin:pytyped-marker",
         "pyproject-fmt-plugin/src/pyproject_fmt_pants_plugin/goals",
-        "pyproject-fmt-plugin/src/pyproject_fmt_pants_plugin/lockfile_resource",
+        "pyproject-fmt-plugin/src/pyproject_fmt_pants_plugin/lockfile_resource:lockfile-resource-module",
     ],
     provides=python_artifact(name="pyproject-fmt-pants-plugin"),
     sdist=False,

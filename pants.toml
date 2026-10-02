@@ -59,6 +59,7 @@ ambiguity_resolution = "by_source_root"
 config = "pyproject.toml"
 
 [pytest]
+args = ["-vv"]
 config = "pyproject.toml"
 
 [update-build-files]
