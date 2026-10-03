@@ -111,7 +111,7 @@ jobs:
       id-token: write # mint the OIDC token PyPI exchanges for a short-lived, project-scoped API token
     steps:
       - name: Download wheel
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: wheel
           path: dist
@@ -134,7 +134,7 @@ jobs:
       contents: write # `gh release upload` attaches the asset to the draft; `gh release edit` publishes it
     steps:
       - name: Download wheel
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: wheel
           path: dist
