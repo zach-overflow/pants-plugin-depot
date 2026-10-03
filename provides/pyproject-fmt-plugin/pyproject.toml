@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pyproject-fmt-pants-plugin"
 # Rewritten by `cog bump` (see the pre-bump hook in the root `cog.toml`). Do not edit by hand.
-version = "0.0.1"
+version = "0.0.2"
 # Pants loads plugins into its own interpreter (CPython 3.14 as of Pants 2.33).
 requires-python = ">=3.14"
 # `pantsbuild.pants` is deliberately absent: Pants supplies itself at plugin load time and is not on PyPI.
