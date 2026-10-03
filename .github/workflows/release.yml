@@ -6,9 +6,10 @@ run-name: Release from ${{ github.ref_name }} by ${{ github.actor }}
 #      commits since the latest tag are conventional and that at least one plugin warrants a bump, then
 #      validates the repo and builds the wheels WITHOUT publishing anything.
 #   2. `cog bump --auto` then bumps every plugin whose files changed (cog.toml lists them under
-#      `[monorepo.packages]`). Per bumped plugin it rewrites `version` in `<plugin-name>/pyproject.toml`,
-#      updates `<plugin-name>/CHANGELOG.md`, and tags `<plugin-name>-vX.Y.Z`. All of it lands in ONE
-#      `chore(version): bump packages` commit, which is pushed to the default branch with the tags.
+#      `[monorepo.packages]`). Per bumped plugin it rewrites `version` in
+#      `provides/<plugin-name>/pyproject.toml`, updates `provides/<plugin-name>/CHANGELOG.md`, and tags
+#      `<plugin-name>-vX.Y.Z`. All of it lands in ONE `chore(version): bump packages` commit, which is
+#      pushed to the default branch with the tags.
 #   3. Per tag, a DRAFT GitHub release is created with that plugin's changelog section as its body, and
 #      the Publish workflow is dispatched (see the `publish` job below for why it is dispatched rather than
 #      `push`-triggered or called as a reusable workflow). Publish attaches the wheel to the draft and only
@@ -179,8 +180,9 @@ jobs:
           fi
           git push --atomic origin "HEAD:${GITHUB_REF_NAME}" "${tags[@]}"
           echo "tags=${tags[*]}" >> "$GITHUB_OUTPUT"
-      # A tag is `<plugin-name>-vX.Y.Z`, and the plugin's directory carries the same name. Its notes are
-      # the newest section of `<plugin-name>/CHANGELOG.md`: from the tag's heading to the next `- - -`.
+      # A tag is `<plugin-name>-vX.Y.Z`, and the plugin's directory under `provides/` carries the same name.
+      # Its notes are the newest section of `provides/<plugin-name>/CHANGELOG.md`: from the tag's heading to
+      # the next `- - -`.
       - name: Draft the GitHub releases
         env:
           GH_TOKEN: ${{ github.token }}
@@ -189,13 +191,14 @@ jobs:
           read -ra tags <<< "${TAGS}"
           for tag in "${tags[@]}"; do
             package="${tag%-v*}"
+            changelog="provides/${package}/CHANGELOG.md"
             awk -v heading="## [${tag}]" '
               index($0, heading) == 1 { found = 1; next }
               found && /^- - -$/ { exit }
               found { print }
-            ' "${package}/CHANGELOG.md" > release-notes.md
+            ' "${changelog}" > release-notes.md
             if ! grep -q '[^[:space:]]' release-notes.md; then
-              echo "::error::Found no section for ${tag} in ${package}/CHANGELOG.md."
+              echo "::error::Found no section for ${tag} in ${changelog}."
               exit 1
             fi
             gh release create "${tag}" \

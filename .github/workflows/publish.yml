@@ -52,7 +52,8 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     steps:
-      # The tagged commit is the bump commit, so `<plugin-name>/pyproject.toml` carries the tag's version.
+      # The tagged commit is the bump commit, so `provides/<plugin-name>/pyproject.toml` carries the tag's
+      # version.
       - name: Checkout release tag
         uses: actions/checkout@v4
         with:
@@ -68,17 +69,17 @@ jobs:
           named-caches-hash: ${{ hashFiles('3rdparty/**/*-lockfile.json') }}
           cache-lmdb-store: 'true'
 
-      # The plugin's directory carries the tag's plugin name. A missing wheel means the committed version
-      # and the tag disagree.
+      # The plugin's directory under `provides/` carries the tag's plugin name. A missing wheel means the
+      # committed version and the tag disagree.
       - name: Build wheel
         env:
           PACKAGE: ${{ needs.setup.outputs.package }}
           VERSION: ${{ needs.setup.outputs.version }}
         run: |
-          pants package "${PACKAGE}:plugin-whl"
+          pants package "provides/${PACKAGE}:plugin-whl"
           wheels=(dist/*-"${VERSION}"-py3-none-any.whl)
           if [[ "${#wheels[@]}" -ne 1 || ! -f "${wheels[0]}" ]]; then
-            echo "::error::Expected exactly one wheel with version ${VERSION} from ${PACKAGE}:plugin-whl."
+            echo "::error::Expected exactly one wheel with version ${VERSION} from provides/${PACKAGE}:plugin-whl."
             ls -l dist
             exit 1
           fi

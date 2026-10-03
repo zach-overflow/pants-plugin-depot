@@ -1,13 +1,14 @@
 # pants-plugin-depot
 
-A collection of [Pantsbuild](https://www.pantsbuild.org/) plugins. Each plugin is its own Python
-distribution with its own version, changelog and PyPI project.
+A collection of [Pantsbuild](https://www.pantsbuild.org/) plugins. Each plugin lives in its own directory
+under [`provides/`](provides) and is its own Python distribution with its own version, changelog and PyPI
+project.
 
 ## Plugins
 
-| Plugin                                         | PyPI                                                                           | What it does                                                                              |
-| :--------------------------------------------- | :----------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------- |
-| [`pyproject-fmt-plugin`](pyproject-fmt-plugin) | [`pyproject-fmt-pants-plugin`](https://pypi.org/project/pyproject-fmt-pants-plugin/) | Formats `pyproject.toml` files with [`pyproject-fmt`](https://pyproject-fmt.readthedocs.io/). |
+| Plugin                                                  | PyPI                                                                           | What it does                                                                              |
+| :------------------------------------------------------ | :----------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------- |
+| [`pyproject-fmt-plugin`](provides/pyproject-fmt-plugin) | [`pyproject-fmt-pants-plugin`](https://pypi.org/project/pyproject-fmt-pants-plugin/) | Formats `pyproject.toml` files with [`pyproject-fmt`](https://pyproject-fmt.readthedocs.io/). |
 
 See each plugin's README for installation and supported versions.
 
