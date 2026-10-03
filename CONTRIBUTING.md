@@ -12,17 +12,20 @@ All commands run from the repo root.
 
 ## Repository layout
 
-Each plugin is a separate Python distribution in its own top-level directory:
+Each plugin is a separate Python distribution in its own directory under the top-level `provides/`:
 
 ```
-<plugin-name>/
-  BUILD            # the `plugin-whl` python_distribution
-  pyproject.toml   # packaging metadata, version and runtime dependencies of this plugin
-  README.md
-  CHANGELOG.md     # written by `cog bump`
-  src/<root_module>/
-  tests/<root_module>_tests/
+provides/
+  <plugin-name>/
+    BUILD            # the `plugin-whl` python_distribution
+    pyproject.toml   # packaging metadata, version and runtime dependencies of this plugin
+    README.md
+    CHANGELOG.md     # written by `cog bump`
+    src/<root_module>/
+    tests/<root_module>_tests/
 ```
+
+Every plugin MUST live in `provides/<plugin-name>/`. Everything outside `provides/` is shared repo tooling.
 
 The root `pyproject.toml` holds only the repo-wide tool configuration (ruff, pytest, mypy).
 
@@ -41,7 +44,7 @@ pants generate-lockfiles                # regenerate 3rdparty/python/plugin-lock
 pants export --resolve=plugin-resolve   # virtualenv for IDEs -> dist/export/
 ```
 
-Append a directory to scope a goal to one plugin, e.g. `pants test pyproject-fmt-plugin::`.
+Append a directory to scope a goal to one plugin, e.g. `pants test provides/pyproject-fmt-plugin::`.
 
 ## Dependencies
 
@@ -71,9 +74,10 @@ itself pins.
 
 ## Versioning
 
-Each plugin carries its own version, committed as `[project].version` in `<plugin-name>/pyproject.toml`.
-It MUST NOT be edited by hand. `cog bump` rewrites it, updates `<plugin-name>/CHANGELOG.md`, and tags the
-commit `<plugin-name>-vMAJOR.MINOR.PATCH`. There is no repo-wide version.
+Each plugin carries its own version, committed as `[project].version` in
+`provides/<plugin-name>/pyproject.toml`. It MUST NOT be edited by hand. `cog bump` rewrites it, updates
+`provides/<plugin-name>/CHANGELOG.md`, and tags the commit `<plugin-name>-vMAJOR.MINOR.PATCH`. There is no
+repo-wide version.
 
 Between releases, a wheel built from `main` carries the last released version.
 
@@ -106,11 +110,13 @@ part. A commit that touches two plugins bumps both. A commit that touches only r
 
 ## Adding a plugin
 
-1. Create `<plugin-name>/` following the layout above. Copy `pyproject-fmt-plugin/BUILD` and
-   `pyproject-fmt-plugin/pyproject.toml` as a starting point. Set `version = "0.0.0"`.
-2. Keep the distribution target named `plugin-whl`. The Publish workflow builds `<plugin-name>:plugin-whl`.
-3. Register the plugin in `cog.toml`: add `[monorepo.packages.<plugin-name>]` with `path = "<plugin-name>"`,
-   and add `<plugin-name>` to `scopes`. The package name MUST equal the directory name.
+1. Create `provides/<plugin-name>/` following the layout above. Copy `provides/pyproject-fmt-plugin/BUILD`
+   and `provides/pyproject-fmt-plugin/pyproject.toml` as a starting point. Set `version = "0.0.0"`.
+2. Keep the distribution target named `plugin-whl`. The Publish workflow builds
+   `provides/<plugin-name>:plugin-whl`.
+3. Register the plugin in `cog.toml`: add `[monorepo.packages.<plugin-name>]` with
+   `path = "provides/<plugin-name>"`, and add `<plugin-name>` to `scopes`. The package name MUST equal the
+   directory name under `provides/`.
 4. Add the plugin's modules to `known-first-party` in the root `pyproject.toml`.
 5. Add the plugin to the table in the root `README.md`.
 6. Register a PyPI Trusted Publisher for the new project (see below).

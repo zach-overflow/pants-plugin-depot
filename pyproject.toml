@@ -1,8 +1,8 @@
-# Repo-wide tool configuration. Each plugin's packaging metadata lives in `<plugin-name>/pyproject.toml`.
+# Repo-wide tool configuration. Each plugin's packaging metadata lives in `provides/<plugin-name>/pyproject.toml`.
 
 [tool.ruff]
 target-version = "py314"
-src = ["*/src", "*/tests"]
+src = ["provides/*/src", "provides/*/tests"]
 line-length = 120
 indent-width = 4
 
@@ -64,7 +64,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"*/tests/**/*.py" = ["D101", "D107"]
+"provides/*/tests/**/*.py" = ["D101", "D107"]
 
 [tool.ruff.lint.isort]
 split-on-trailing-comma = false

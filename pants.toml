@@ -21,8 +21,8 @@ pants_ignore = [".*/", "/dist/", "__pycache__", "!.github/"]
 dependents = "transitive"
 
 [source]
-# Each plugin lives in `<plugin-name>/` with its own `src/` and `tests/` roots.
-root_patterns = ["/*/src", "/*/tests"]
+# Each plugin lives in `provides/<plugin-name>/` with its own `src/` and `tests/` roots.
+root_patterns = ["/provides/*/src", "/provides/*/tests"]
 
 [tailor]
 build_file_name = "BUILD"

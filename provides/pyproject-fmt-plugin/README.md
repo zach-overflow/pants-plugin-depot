@@ -26,7 +26,7 @@ Pants loads plugins into its own interpreter, so the plugin requires the Python 
 ## Releases
 
 Wheels are published to [PyPI](https://pypi.org/project/pyproject-fmt-pants-plugin/). Release notes live in
-the [changelog](https://github.com/zach-overflow/pants-plugin-depot/blob/main/pyproject-fmt-plugin/CHANGELOG.md)
+the [changelog](https://github.com/zach-overflow/pants-plugin-depot/blob/main/provides/pyproject-fmt-plugin/CHANGELOG.md)
 and on the [GitHub releases page](https://github.com/zach-overflow/pants-plugin-depot/releases).
 
 ## Contributing, Bug Reports and Feature Requests

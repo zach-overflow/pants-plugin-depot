@@ -37,7 +37,7 @@ readme = "README.md"
 [project.urls]
 Repository = "https://github.com/zach-overflow/pants-plugin-depot"
 "Bug Tracker" = "https://github.com/zach-overflow/pants-plugin-depot/issues"
-Changelog = "https://github.com/zach-overflow/pants-plugin-depot/blob/main/pyproject-fmt-plugin/CHANGELOG.md"
+Changelog = "https://github.com/zach-overflow/pants-plugin-depot/blob/main/provides/pyproject-fmt-plugin/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["src"]

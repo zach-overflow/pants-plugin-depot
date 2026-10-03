@@ -57,4 +57,4 @@ authors = [{ username = "zach-overflow", signature = "Zach" }]
 [bump_profiles]
 
 [monorepo.packages.pyproject-fmt-plugin]
-path = "pyproject-fmt-plugin"
+path = "provides/pyproject-fmt-plugin"
