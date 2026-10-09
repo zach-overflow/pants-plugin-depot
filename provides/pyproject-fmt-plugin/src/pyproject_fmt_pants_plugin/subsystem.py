@@ -1,14 +1,16 @@
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 from typing import ClassVar
 
 from pants.backend.python.subsystems.python_tool_base import PythonToolBase
 from pants.backend.python.target_types import ConsoleScript
 from pants.core.goals.resolves import ExportableTool
 from pants.core.util_rules.config_files import ConfigFilesRequest
-from pants.engine.rules import Rule, collect_rules
+from pants.engine.rules import collect_rules
 from pants.engine.unions import UnionRule
 from pants.option.option_types import BoolOption, FileOption, SkipOption
 from pants.util.strutil import softwrap
+
+from pants_plugin_developer_utils import CollectedRules
 
 
 class PyprojectFmt(PythonToolBase):
@@ -40,11 +42,9 @@ class PyprojectFmt(PythonToolBase):
         advanced=True,
         help=lambda cls: softwrap(
             f"""
-            When True, uses `pyproject-fmt.toml` or `pyproject.toml` file in the build root during a run.
-            If both a `pyproject-fmt.toml` and a `pyproject.toml` file exist at the same directory,
-            `pyproject-fmt.toml` takes precedence. The discovered config will control the shared settings
-            for all `pyproject.toml` files in the repo, with per-pyproject.toml files having the ability to
-            adjust their individual file-scoped pyproject-fmt settings as needed.
+            When True, uses a `pyproject-fmt.toml` file in the build root as the shared config for all
+            `pyproject.toml` files in the repo. Each `pyproject.toml` file may adjust its own file-scoped
+            settings in a `[tool.pyproject-fmt]` table; `pyproject-fmt` reads those tables itself.
 
             Setting this option will disable `[{cls.options_scope}].config`.
 
@@ -82,5 +82,5 @@ class PyprojectFmt(PythonToolBase):
         )
 
 
-def rules() -> Iterable[Rule | UnionRule]:
+def rules() -> CollectedRules:
     return (*collect_rules(), UnionRule(ExportableTool, PyprojectFmt))

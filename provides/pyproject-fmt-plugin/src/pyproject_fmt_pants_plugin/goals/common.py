@@ -1,5 +1,6 @@
 """Common rules across multiple pants goals with which `pyproject-fmt` integrates."""
 
+import os
 from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum, unique
@@ -8,15 +9,13 @@ from pants.backend.python.util_rules.interpreter_constraints import InterpreterC
 from pants.backend.python.util_rules.pex import VenvPex, VenvPexProcess, create_venv_pex, setup_venv_pex_process
 from pants.core.util_rules.config_files import find_config_file
 from pants.core.util_rules.partitions import Partitions
-from pants.engine.fs import MergeDigests, PathGlobs
-from pants.engine.intrinsics import execute_process, get_digest_entries, merge_digests, path_globs_to_digest
-from pants.engine.process import FallibleProcessResult
-from pants.engine.rules import Rule, collect_rules, concurrently, implicitly, rule
-from pants.engine.unions import UnionRule
+from pants.engine.fs import Digest, MergeDigests, Snapshot
+from pants.engine.intrinsics import execute_process, merge_digests
+from pants.engine.rules import collect_rules, concurrently, implicitly, rule
 from pants.source.filespec import FilespecMatcher
 from pants.util.logging import LogLevel
-from pants.util.strutil import pluralize
 
+from pants_plugin_developer_utils import CollectedRules
 from pyproject_fmt_pants_plugin.subsystem import PyprojectFmt
 
 
@@ -33,6 +32,8 @@ class RunPyprojectFmtRequest:
     """Wrapper for the unique details of a given `pyproject-fmt` run for either `fmt` or `lint` goals."""
 
     mode: PyprojectFmtMode
+    snapshot: Snapshot
+    """The `pyproject.toml` files of the goal's batch."""
 
     @property
     def is_check(self) -> bool:
@@ -42,7 +43,18 @@ class RunPyprojectFmtRequest:
     @property
     def is_format(self) -> bool:
         """Returns `True` if running `pyproject-fmt` without the `--check` flag (via the `pants fmt` goal)."""
-        return self.mode is PyprojectFmtMode.CHECK
+        return self.mode is PyprojectFmtMode.FORMAT
+
+
+@dataclass(frozen=True)
+class PyprojectFmtResult:
+    """Aggregate of the per-file `pyproject-fmt` processes of one `RunPyprojectFmtRequest`."""
+
+    exit_code: int
+    stdout: str
+    stderr: str
+    output_digest: Digest
+    """The processed `pyproject.toml` files. Empty in check mode."""
 
 
 def common_partition_pyproject_toml_inputs(skip: bool, files: Iterable[str]) -> Partitions:
@@ -71,49 +83,47 @@ async def create_pyproject_fmt_venv_pex(pyproject_fmt: PyprojectFmt) -> VenvPex:
     desc="Calls the underlying tool in a separate process with the goal-specific options + any subsystem settings.",
     level=LogLevel.DEBUG,
 )
-async def run_pyproject_fmt_process(
-    request: RunPyprojectFmtRequest, pyproject_fmt: PyprojectFmt
-) -> FallibleProcessResult:
-    (config_files, subject_files_digest) = await concurrently(
-        find_config_file(pyproject_fmt.config_request()),
-        path_globs_to_digest(PathGlobs(["**/pyproject.toml", "pyproject.toml"])),
+async def run_pyproject_fmt_process(request: RunPyprojectFmtRequest, pyproject_fmt: PyprojectFmt) -> PyprojectFmtResult:
+    (config_files, ppf_pex) = await concurrently(
+        find_config_file(pyproject_fmt.config_request()), create_pyproject_fmt_venv_pex(**implicitly())
     )
-    conf_filepaths = config_files.snapshot.files
-    if len(conf_filepaths) != 1:
-        raise ValueError(
-            f"Expected exactly 1 shared `pyproject-fmt` config, but found {len(conf_filepaths)} shared configs."
-        )
+    input_digest = await merge_digests(MergeDigests([request.snapshot.digest, config_files.snapshot.digest]))
 
-    args: list[str] = ["--config", conf_filepaths[0]]
+    args: list[str] = []
+    # `--config` only accepts a standalone `pyproject-fmt.toml`. Passing a `pyproject.toml` fails on its
+    # `[project]` table; `pyproject-fmt` reads `[tool.pyproject-fmt]` tables from each input file itself.
+    shared_config = pyproject_fmt.config or next(
+        (path for path in config_files.snapshot.files if os.path.basename(path) == "pyproject-fmt.toml"), None
+    )
+    if shared_config:
+        args.extend(["--config", shared_config])
     if request.is_check:
         args.append("--check")
 
-    (input_digest, ppf_pex, subject_files_entries) = await concurrently(
-        merge_digests(MergeDigests([subject_files_digest, config_files.snapshot.digest])),
-        create_pyproject_fmt_venv_pex(pyproject_fmt),
-        get_digest_entries(subject_files_digest),
+    # `pyproject-fmt` stops after the first input it changes (`any()` over a generator), so run one process per file.
+    processes = await concurrently(
+        setup_venv_pex_process(
+            VenvPexProcess(
+                ppf_pex,
+                argv=(*args, filepath),
+                input_digest=input_digest,
+                output_files=(filepath,) if request.is_format else None,
+                description=f"Run pyproject-fmt{' --check' if request.is_check else ''} on {filepath}.",
+                level=LogLevel.DEBUG,
+            ),
+            **implicitly(),
+        )
+        for filepath in request.snapshot.files
     )
-    # Final args in the `pyproject-fmt` command should be the paths to the subject `pyproject.toml` files.
-    subject_filepaths = tuple(sorted([entry.path for entry in subject_files_entries]))
-    args.extend(list(subject_filepaths))
-
-    desc_txt = (
-        f"Run pyproject-fmt {'--check' if request.is_check else ''} on {pluralize(len(subject_filepaths), 'file')}."
+    results = await concurrently(execute_process(process, **implicitly()) for process in processes)
+    output_digest = await merge_digests(MergeDigests(result.output_digest for result in results))
+    return PyprojectFmtResult(
+        exit_code=max((result.exit_code for result in results), default=0),
+        stdout="".join(result.stdout.decode() for result in results),
+        stderr="".join(result.stderr.decode() for result in results),
+        output_digest=output_digest,
     )
-    venv_pex_process = await setup_venv_pex_process(
-        VenvPexProcess(
-            ppf_pex,
-            argv=args,
-            input_digest=input_digest,
-            # TODO: determine if the outputs need to be different here for FORMAT mode.
-            output_files=subject_filepaths if request.is_format else None,
-            description=desc_txt,
-            level=LogLevel.DEBUG,
-        ),
-        **implicitly(),
-    )
-    return await execute_process(venv_pex_process, **implicitly())
 
 
-def rules() -> Iterable[Rule | UnionRule]:
+def rules() -> CollectedRules:
     return collect_rules()

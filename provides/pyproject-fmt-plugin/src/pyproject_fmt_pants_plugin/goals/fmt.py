@@ -1,13 +1,12 @@
 """Rules for executing `pyproject-fmt` operations during the `pants fmt` goal execution."""
 
-from collections.abc import Iterable
-
 from pants.core.goals.fmt import FmtFilesRequest, FmtResult, Partitions
-from pants.engine.rules import Rule, collect_rules, rule
-from pants.engine.unions import UnionRule
+from pants.engine.intrinsics import digest_to_snapshot
+from pants.engine.rules import collect_rules, implicitly, rule
 from pants.util.logging import LogLevel
 from pants.util.meta import classproperty
 
+from pants_plugin_developer_utils import CollectedRules
 from pyproject_fmt_pants_plugin.goals.common import (
     PyprojectFmtMode,
     RunPyprojectFmtRequest,
@@ -37,10 +36,18 @@ async def partition_inputs(request: PyprojectFmtRequest.PartitionRequest, pyproj
 
 
 @rule(desc="Auto-formats all requested `pyproject.toml` files with `pyproject-fmt`", level=LogLevel.DEBUG)
-async def run_pyproject_fmt_formatting(request: PyprojectFmtRequest.Batch, pyproject_fmt: PyprojectFmt) -> FmtResult:
-    result = await run_pyproject_fmt_process(RunPyprojectFmtRequest(mode=PyprojectFmtMode.FORMAT), pyproject_fmt)
-    return await FmtResult.create(request, result)
+async def run_pyproject_fmt_formatting(request: PyprojectFmtRequest.Batch) -> FmtResult:
+    result = await run_pyproject_fmt_process(
+        RunPyprojectFmtRequest(mode=PyprojectFmtMode.FORMAT, snapshot=request.snapshot), **implicitly()
+    )
+    return FmtResult(
+        input=request.snapshot,
+        output=await digest_to_snapshot(result.output_digest),
+        stdout=result.stdout,
+        stderr=result.stderr,
+        tool_name=request.tool_name,
+    )
 
 
-def rules() -> Iterable[Rule | UnionRule]:
+def rules() -> CollectedRules:
     return (*collect_rules(), *PyprojectFmtRequest.rules())
