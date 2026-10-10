@@ -13,6 +13,7 @@ scopes = [
   "dev",
   "goals",
   "hooks",
+  "maturin-pants-plugin",
   "pyproject-fmt-plugin",
   "rules",
   "subsystem",
@@ -55,6 +56,9 @@ repository = "pants-plugin-depot"
 authors = [{ username = "zach-overflow", signature = "Zach" }]
 
 [bump_profiles]
+
+[monorepo.packages.maturin-pants-plugin]
+path = "provides/maturin-pants-plugin"
 
 [monorepo.packages.pyproject-fmt-plugin]
 path = "provides/pyproject-fmt-plugin"

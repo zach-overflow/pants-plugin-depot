@@ -8,6 +8,7 @@ project.
 
 | Plugin                                                  | PyPI                                                                           | What it does                                                                              |
 | :------------------------------------------------------ | :----------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------- |
+| [`maturin-pants-plugin`](provides/maturin-pants-plugin) | [`maturin-pants-plugin`](https://pypi.org/project/maturin-pants-plugin/)       | Builds and publishes Rust-backed Python wheels with [`maturin`](https://www.maturin.rs/). |
 | [`pyproject-fmt-plugin`](provides/pyproject-fmt-plugin) | [`pyproject-fmt-pants-plugin`](https://pypi.org/project/pyproject-fmt-pants-plugin/) | Formats `pyproject.toml` files with [`pyproject-fmt`](https://pyproject-fmt.readthedocs.io/). |
 
 See each plugin's README for installation and supported versions.
