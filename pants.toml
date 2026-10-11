@@ -11,8 +11,11 @@ backend_packages = [
   "pants.backend.shell.lint.shellcheck",
   "pants.backend.shell.lint.shfmt",
   "pants.backend.tools.taplo",
+  "pyproject_fmt_pants_plugin",
 ]
 pants_version = "2.33.1"
+# https://www.pantsbuild.org/stable/docs/writing-plugins/overview#in-repo-plugins
+pythonpath = ["%(buildroot)s/provides/pyproject-fmt-plugin/src"]
 build_patterns = ["BUILD", "BUILD.*"]
 colors = true
 pants_ignore = [".*/", "/dist/", "__pycache__", "!.github/"]
@@ -27,8 +30,17 @@ root_patterns = ["/provides/*/src", "/provides/*/tests"]
 [tailor]
 build_file_name = "BUILD"
 
+[pyproject-fmt]
+config_discovery = true
+
 [taplo]
-glob_pattern = ["**/*.toml", "!.taplo.toml", "!taplo.toml"]
+glob_pattern = [
+  "**/*.toml",
+  "!.taplo.toml",
+  "!taplo.toml",
+  # `pyproject-fmt` handles `pyproject.toml` files.
+  "!**/pyproject.toml",
+]
 
 [cli.alias]
 --all-changed = "--changed-since=HEAD --changed-dependents=transitive"
