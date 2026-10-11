@@ -19,6 +19,7 @@ scopes = [
   "rules",
   "subsystem",
   "targets",
+  "ty-pants-plugin",
   "version",
 ]
 skip_ci = "[skip ci]"
@@ -66,3 +67,6 @@ path = "provides/pants-plugin-developer-utils"
 
 [monorepo.packages.pyproject-fmt-plugin]
 path = "provides/pyproject-fmt-plugin"
+
+[monorepo.packages.ty-pants-plugin]
+path = "provides/ty-pants-plugin"
