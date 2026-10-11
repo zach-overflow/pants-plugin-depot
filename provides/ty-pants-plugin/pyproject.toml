@@ -1,0 +1,43 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [ "setuptools>=84.0.0" ]
+
+[project]
+name = "ty-pants-plugin"
+# Rewritten by `cog bump` (see the pre-bump hook in the root `cog.toml`). Do not edit by hand.
+version = "0.0.0"
+description = "A Pantsbuild plugin for type checking Python code with ty."
+readme = "README.md"
+keywords = [
+  "pants",
+  "pants plugin",
+  "pantsbuild",
+  "ty",
+  "type checker",
+  "typecheck",
+]
+license = "Apache-2.0"
+license-files = [ "LICENSE" ]
+maintainers = [ { name = "zach-overflow" } ]
+authors = [ { name = "Zach Gottesman" } ]
+# Pants loads plugins into its own interpreter (CPython 3.14 as of Pants 2.33).
+requires-python = ">=3.14"
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Software Development :: Build Tools",
+  "Topic :: Software Development :: Quality Assurance",
+  "Typing :: Typed",
+]
+# `pantsbuild.pants` is deliberately absent: Pants supplies itself at plugin load time and is not on PyPI.
+dependencies = [ "pants-plugin-developer-utils>=0.1.0" ]
+urls."Bug Tracker" = "https://github.com/zach-overflow/pants-plugin-depot/issues"
+urls.Changelog = "https://github.com/zach-overflow/pants-plugin-depot/blob/main/provides/ty-pants-plugin/CHANGELOG.md"
+urls.Repository = "https://github.com/zach-overflow/pants-plugin-depot"
+
+[tool.setuptools]
+packages.find.where = [ "src" ]
+packages.find.include = [ "ty_pants_plugin*" ]
+package-data.ty_pants_plugin = [ "py.typed" ]
