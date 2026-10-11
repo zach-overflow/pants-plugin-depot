@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [pyproject-fmt-plugin-v0.1.0](https://github.com/zach-overflow/pants-plugin-depot/compare/be7e2d8fca4865552208f37c65183cf57753c9fb..pyproject-fmt-plugin-v0.1.0) - 2026-10-09
+
+#### Features
+
+- Add initial functioning pyproject-fmt plugin (#7) - ([be7e2d8](https://github.com/zach-overflow/pants-plugin-depot/commit/be7e2d8fca4865552208f37c65183cf57753c9fb)) - [@zach-overflow](https://github.com/zach-overflow)
+
+- - -
+
 ## [pyproject-fmt-plugin-v0.0.2](https://github.com/zach-overflow/pants-plugin-depot/compare/b7905de7a004ba77c880c8896c2dbe9c88b5819a..pyproject-fmt-plugin-v0.0.2) - 2026-10-03
 
 #### Internal Tooling / Development
