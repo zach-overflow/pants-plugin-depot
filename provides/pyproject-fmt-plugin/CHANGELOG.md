@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [pyproject-fmt-plugin-v0.2.0](https://github.com/zach-overflow/pants-plugin-depot/compare/44ec2d528fb8c4a02f47ba715ab37322edb6073a..pyproject-fmt-plugin-v0.2.0) - 2026-10-11
+
+#### Features
+
+- (**pants-plugin-developer-utils**) prepare package for PyPI publication (#9) - ([44ec2d5](https://github.com/zach-overflow/pants-plugin-depot/commit/44ec2d528fb8c4a02f47ba715ab37322edb6073a)) - [@zach-overflow](https://github.com/zach-overflow)
+
+- - -
+
 ## [pyproject-fmt-plugin-v0.1.0](https://github.com/zach-overflow/pants-plugin-depot/compare/be7e2d8fca4865552208f37c65183cf57753c9fb..pyproject-fmt-plugin-v0.1.0) - 2026-10-09
 
 #### Features
