@@ -1,9 +1,8 @@
-"""Common rules across multiple pants goals with which `pyproject-fmt` integrates."""
+"""Rules shared by the `pyproject-fmt` goal integrations."""
 
 import os
 from collections.abc import Iterable
 from dataclasses import dataclass
-from enum import StrEnum, unique
 from typing import TYPE_CHECKING
 
 from pants.backend.python.util_rules.interpreter_constraints import InterpreterConstraints
@@ -22,31 +21,12 @@ if TYPE_CHECKING:
     from pants_plugin_developer_utils import CollectedRules
 
 
-@unique
-class PyprojectFmtMode(StrEnum):
-    """Supported modes for `pyproject-fmt`: check mode (fail if changes would occur), or fmt mode (apply changes)."""
-
-    CHECK = "check"
-    FORMAT = "format"
-
-
 @dataclass(frozen=True)
 class RunPyprojectFmtRequest:
-    """Wrapper for the unique details of a given `pyproject-fmt` run for either `fmt` or `lint` goals."""
+    """Wrapper for the unique details of a given `pyproject-fmt` run."""
 
-    mode: PyprojectFmtMode
     snapshot: Snapshot
     """The `pyproject.toml` files of the goal's batch."""
-
-    @property
-    def is_check(self) -> bool:
-        """Returns `True` if the request is for running `pyproject-fmt --check` (via the `pants lint` goal)."""
-        return self.mode is PyprojectFmtMode.CHECK
-
-    @property
-    def is_format(self) -> bool:
-        """Returns `True` if running `pyproject-fmt` without the `--check` flag (via the `pants fmt` goal)."""
-        return self.mode is PyprojectFmtMode.FORMAT
 
 
 @dataclass(frozen=True)
@@ -57,7 +37,7 @@ class PyprojectFmtResult:
     stdout: str
     stderr: str
     output_digest: Digest
-    """The processed `pyproject.toml` files. Empty in check mode."""
+    """The formatted `pyproject.toml` files."""
 
 
 def common_partition_pyproject_toml_inputs(skip: bool, files: Iterable[str]) -> Partitions:
@@ -82,10 +62,7 @@ async def create_pyproject_fmt_venv_pex(pyproject_fmt: PyprojectFmt) -> VenvPex:
     )
 
 
-@rule(
-    desc="Calls the underlying tool in a separate process with the goal-specific options + any subsystem settings.",
-    level=LogLevel.DEBUG,
-)
+@rule(desc="Calls the underlying tool in a separate process with any subsystem settings.", level=LogLevel.DEBUG)
 async def run_pyproject_fmt_process(request: RunPyprojectFmtRequest, pyproject_fmt: PyprojectFmt) -> PyprojectFmtResult:
     (config_files, ppf_pex) = await concurrently(
         find_config_file(pyproject_fmt.config_request()), create_pyproject_fmt_venv_pex(**implicitly())
@@ -100,8 +77,6 @@ async def run_pyproject_fmt_process(request: RunPyprojectFmtRequest, pyproject_f
     )
     if shared_config:
         args.extend(["--config", shared_config])
-    if request.is_check:
-        args.append("--check")
 
     # `pyproject-fmt` stops after the first input it changes (`any()` over a generator), so run one process per file.
     processes = await concurrently(
@@ -110,8 +85,8 @@ async def run_pyproject_fmt_process(request: RunPyprojectFmtRequest, pyproject_f
                 ppf_pex,
                 argv=(*args, filepath),
                 input_digest=input_digest,
-                output_files=(filepath,) if request.is_format else None,
-                description=f"Run pyproject-fmt{' --check' if request.is_check else ''} on {filepath}.",
+                output_files=(filepath,),
+                description=f"Run pyproject-fmt on {filepath}.",
                 level=LogLevel.DEBUG,
             ),
             **implicitly(),

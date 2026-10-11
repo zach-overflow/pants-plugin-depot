@@ -5,31 +5,14 @@ import pytest
 from pants.backend.python.util_rules.interpreter_constraints import InterpreterConstraints
 from pants.backend.python.util_rules.pex import PexRequest, VenvPex
 from pants.backend.python.util_rules.pex_requirements import EntireLockfile
-from pants.engine.fs import EMPTY_SNAPSHOT
 from pants.testutil.rule_runner import QueryRule, RuleRunner, run_rule_with_mocks
 
 from pants_plugin_developer_utils.testing_utils import RuleRunnerFactory
 from pyproject_fmt_pants_plugin.goals.common import (
-    PyprojectFmtMode,
-    RunPyprojectFmtRequest,
     common_partition_pyproject_toml_inputs,
     create_pyproject_fmt_venv_pex,
 )
 from pyproject_fmt_pants_plugin.subsystem import PyprojectFmt
-
-
-class TestRunPyprojectFmtRequest:
-    """Wrapper for unit tests of `RunPyprojectFmtRequest` methods."""
-
-    @pytest.mark.parametrize(("mode", "expected"), [(PyprojectFmtMode.CHECK, True), (PyprojectFmtMode.FORMAT, False)])
-    def test_is_check(self, mode: PyprojectFmtMode, expected: bool) -> None:
-        request = RunPyprojectFmtRequest(mode=mode, snapshot=EMPTY_SNAPSHOT)
-        assert request.is_check is expected
-
-    @pytest.mark.parametrize(("mode", "expected"), [(PyprojectFmtMode.CHECK, False), (PyprojectFmtMode.FORMAT, True)])
-    def test_is_format(self, mode: PyprojectFmtMode, expected: bool) -> None:
-        request = RunPyprojectFmtRequest(mode=mode, snapshot=EMPTY_SNAPSHOT)
-        assert request.is_format is expected
 
 
 @pytest.mark.parametrize(
