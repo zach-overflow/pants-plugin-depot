@@ -48,6 +48,7 @@ pip_version = "latest"
 separate_lockfile_metadata_file = true
 
 [python.resolves]
+maturin = "provides/maturin-pants-plugin/src/maturin_pants_plugin/lockfile_resource/maturin_lockfile.json"
 "plugin-resolve" = "3rdparty/python/plugin-lockfile.json"
 
 [python-infer]
@@ -61,6 +62,15 @@ config = "pyproject.toml"
 [pytest]
 args = ["-vv"]
 config = "pyproject.toml"
+
+[ruff]
+version = "0.16.8"
+known_versions = [
+  "0.16.8|linux_arm64 |57a4e072b6b74a4dd0036b7b253e056bdb70e02c68504ca6f2bfca2707d03fb6|9565440",
+  "0.16.8|linux_x86_64|e56aa612121de356f37d05f3284cd806081fb72d5dbd4814b3810c5a23c562cc|10274044",
+  "0.16.8|macos_arm64 |0ffa53899f2970d24f14fbed8d8265c87180b159b7100794d97a1527dc60fa79|9329431",
+  "0.16.8|macos_x86_64|bccb4d49c5c9f7e69fd42df2475730a08a641af31b8e0ee5e775e3dd829c4686|9789310",
+]
 
 [update-build-files]
 fmt = true
