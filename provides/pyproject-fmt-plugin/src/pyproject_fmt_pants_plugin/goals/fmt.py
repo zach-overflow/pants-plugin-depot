@@ -1,12 +1,13 @@
 """Rules for executing `pyproject-fmt` operations during the `pants fmt` goal execution."""
 
+from typing import TYPE_CHECKING
+
 from pants.core.goals.fmt import FmtFilesRequest, FmtResult, Partitions
 from pants.engine.intrinsics import digest_to_snapshot
 from pants.engine.rules import collect_rules, implicitly, rule
 from pants.util.logging import LogLevel
 from pants.util.meta import classproperty
 
-from pants_plugin_developer_utils import CollectedRules
 from pyproject_fmt_pants_plugin.goals.common import (
     PyprojectFmtMode,
     RunPyprojectFmtRequest,
@@ -14,6 +15,9 @@ from pyproject_fmt_pants_plugin.goals.common import (
     run_pyproject_fmt_process,
 )
 from pyproject_fmt_pants_plugin.subsystem import PyprojectFmt
+
+if TYPE_CHECKING:
+    from pants_plugin_developer_utils import CollectedRules
 
 
 class PyprojectFmtRequest(FmtFilesRequest):

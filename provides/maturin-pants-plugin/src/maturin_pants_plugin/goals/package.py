@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from pants.core.goals.package import BuiltPackage, BuiltPackageArtifact, PackageFieldSet
 from pants.engine.fs import RemovePrefix
@@ -16,7 +17,9 @@ from maturin_pants_plugin.goals.maturin_common import (
     get_maturin_sources,
 )
 from maturin_pants_plugin.subsystem import Maturin
-from pants_plugin_developer_utils import CollectedRules
+
+if TYPE_CHECKING:
+    from pants_plugin_developer_utils import CollectedRules
 
 
 @dataclass(frozen=True)

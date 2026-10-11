@@ -6,10 +6,11 @@ project.
 
 ## Plugins
 
-| Plugin                                                  | PyPI                                                                           | What it does                                                                              |
-| :------------------------------------------------------ | :----------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------- |
-| [`maturin-pants-plugin`](provides/maturin-pants-plugin) | [`maturin-pants-plugin`](https://pypi.org/project/maturin-pants-plugin/)       | Builds and publishes Rust-backed Python wheels with [`maturin`](https://www.maturin.rs/). |
-| [`pyproject-fmt-plugin`](provides/pyproject-fmt-plugin) | [`pyproject-fmt-pants-plugin`](https://pypi.org/project/pyproject-fmt-pants-plugin/) | Formats `pyproject.toml` files with [`pyproject-fmt`](https://pyproject-fmt.readthedocs.io/). |
+| Plugin                                                                  | PyPI                                                                                     | What it does                                                                                  |
+| :---------------------------------------------------------------------- | :--------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------- |
+| [`maturin-pants-plugin`](provides/maturin-pants-plugin)                 | [`maturin-pants-plugin`](https://pypi.org/project/maturin-pants-plugin/)                 | Builds and publishes Rust-backed Python wheels with [`maturin`](https://www.maturin.rs/).     |
+| [`pants-plugin-developer-utils`](provides/pants-plugin-developer-utils) | [`pants-plugin-developer-utils`](https://pypi.org/project/pants-plugin-developer-utils/) | Type aliases and pytest fixtures for writing and testing Pants plugins.                       |
+| [`pyproject-fmt-plugin`](provides/pyproject-fmt-plugin)                 | [`pyproject-fmt-pants-plugin`](https://pypi.org/project/pyproject-fmt-pants-plugin/)     | Formats `pyproject.toml` files with [`pyproject-fmt`](https://pyproject-fmt.readthedocs.io/). |
 
 See each plugin's README for installation and supported versions.
 

@@ -1,4 +1,5 @@
 import os
+from typing import TYPE_CHECKING
 
 from pants.engine.target import (
     COMMON_TARGET_FIELDS,
@@ -13,7 +14,8 @@ from pants.engine.target import (
 )
 from pants.util.strutil import help_text
 
-from pants_plugin_developer_utils import CollectedTargetTypes
+if TYPE_CHECKING:
+    from pants_plugin_developer_utils import CollectedTargetTypes
 
 
 class MaturinWheelSourcesField(MultipleSourcesField):

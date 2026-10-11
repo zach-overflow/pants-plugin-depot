@@ -49,9 +49,9 @@ Append a directory to scope a goal to one plugin, e.g. `pants test provides/pypr
 ## Dependencies
 
 There is one resolve, `plugin-resolve`, shared by every plugin. It holds Pants itself (via the
-`pants_requirements` target in the root `BUILD`), the test-only requirements in the root `BUILD`, and each
-plugin's runtime dependencies. Pants' builtin tools (ruff, mypy, pytest, ...) use the default versions
-Pants ships with.
+`pants_requirements` target in the root `BUILD`) and each plugin's dependencies. `pytest` comes from the
+`testing` extra of `provides/pants-plugin-developer-utils/pyproject.toml`; every plugin's tests resolve to
+that one target. Pants' builtin tools (ruff, mypy, pytest, ...) use the default versions Pants ships with.
 
 A plugin declares its runtime dependencies in `[project].dependencies` of its own `pyproject.toml`. That
 list is what the wheel requires. To make Pants see it, the plugin's `BUILD` needs:
@@ -71,6 +71,10 @@ Regenerate the lockfile whenever `pants_version` or any plugin's dependencies ch
 A wheel MUST NOT declare `pantsbuild.pants` as a dependency: Pants supplies itself when it loads a plugin,
 and its wheels are not on PyPI. Any other runtime dependency MUST be compatible with the versions Pants
 itself pins.
+
+Plugins import `pants_plugin_developer_utils` only under `if TYPE_CHECKING:`. Its aliases are needed for
+type checking alone, so published plugin wheels carry no dependency on it. Test code MAY import it at
+runtime; tests are not shipped.
 
 ## Versioning
 

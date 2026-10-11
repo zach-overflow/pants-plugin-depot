@@ -1,7 +1,7 @@
 import os
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 from pants.backend.python.util_rules.pex import VenvPex, VenvPexProcess, create_venv_pex, setup_venv_pex_process
 from pants.core.util_rules.env_vars import environment_vars_subset
@@ -23,7 +23,9 @@ from maturin_pants_plugin.target_types import (
     MaturinWheelSourcesField,
     PyProjectTomlField,
 )
-from pants_plugin_developer_utils import CollectedRules
+
+if TYPE_CHECKING:
+    from pants_plugin_developer_utils import CollectedRules
 
 MATURIN_WHEELS_OUT_DIR = "__maturin_wheels__"
 """Sandbox directory `maturin build --out` writes to. Stripped from the digest so wheels land flat in `dist/`."""

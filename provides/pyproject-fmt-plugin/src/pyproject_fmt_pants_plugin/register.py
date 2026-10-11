@@ -1,10 +1,14 @@
 """Backend entry point: Pants loads this module when `pyproject_fmt_pants_plugin` is in `backend_packages`."""
 
-from pants_plugin_developer_utils import CollectedRules
+from typing import TYPE_CHECKING
+
 from pyproject_fmt_pants_plugin.goals.common import rules as common_rules
 from pyproject_fmt_pants_plugin.goals.fmt import rules as fmt_rules
 from pyproject_fmt_pants_plugin.goals.lint import rules as lint_rules
 from pyproject_fmt_pants_plugin.subsystem import rules as subsystem_rules
+
+if TYPE_CHECKING:
+    from pants_plugin_developer_utils import CollectedRules
 
 
 def rules() -> CollectedRules:
