@@ -5,27 +5,45 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pants-plugin-developer-utils"
 # Rewritten by `cog bump` (see the pre-bump hook in the root `cog.toml`). Do not edit by hand.
-version = "0.0.1"
+version = "0.0.0"
 # Pants loads plugins into its own interpreter (CPython 3.14 as of Pants 2.33).
 requires-python = ">=3.14"
 # `pantsbuild.pants` is deliberately absent: Pants supplies itself at plugin load time and is not on PyPI.
-dependencies = ["pytest"]
+dependencies = []
 authors = [{ name = "Zach Gottesman" }]
 maintainers = [{ name = "zach-overflow" }]
-keywords = ["formatter", "pants", "pants plugin", "pantsbuild", "pytest"]
+keywords = [
+  "pants",
+  "pants plugin",
+  "pantsbuild",
+  "pytest",
+  "pytest plugin",
+  "testing",
+  "type hints",
+]
 classifiers = [
   "Development Status :: 3 - Alpha",
+  "Framework :: Pytest",
   "Intended Audience :: Developers",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.14",
   "Topic :: Software Development :: Build Tools",
-  "Topic :: Software Development :: Quality Assurance",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: Software Development :: Testing",
   "Typing :: Typed",
 ]
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 description = "Collection of utilities for writing and testing pantsbuild plugins."
 readme = "README.md"
+
+[project.optional-dependencies]
+# `pantsbuild.pants.testutil` 2.33 requires `pytest<9`. The extra also needs `pantsbuild.pants.testutil`
+# matching the Pants version under test, which is deliberately undeclared: it pins a Pants version.
+testing = ["pytest>=8.4,<9"]
+
+[project.entry-points.pytest11]
+pants_plugin_developer_utils = "pants_plugin_developer_utils.testing_utils.fixtures"
 
 [project.urls]
 Repository = "https://github.com/zach-overflow/pants-plugin-depot"
@@ -38,6 +56,3 @@ include = ["pants_plugin_developer_utils*"]
 
 [tool.setuptools.package-data]
 pants_plugin_developer_utils = ["py.typed"]
-"pants_plugin_developer_utils.lockfile_resource" = [
-  "pants_plugin_developer_utils.json",
-]

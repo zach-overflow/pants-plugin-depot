@@ -4,6 +4,7 @@ import os
 from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum, unique
+from typing import TYPE_CHECKING
 
 from pants.backend.python.util_rules.interpreter_constraints import InterpreterConstraints
 from pants.backend.python.util_rules.pex import VenvPex, VenvPexProcess, create_venv_pex, setup_venv_pex_process
@@ -15,8 +16,10 @@ from pants.engine.rules import collect_rules, concurrently, implicitly, rule
 from pants.source.filespec import FilespecMatcher
 from pants.util.logging import LogLevel
 
-from pants_plugin_developer_utils import CollectedRules
 from pyproject_fmt_pants_plugin.subsystem import PyprojectFmt
+
+if TYPE_CHECKING:
+    from pants_plugin_developer_utils import CollectedRules
 
 
 @unique

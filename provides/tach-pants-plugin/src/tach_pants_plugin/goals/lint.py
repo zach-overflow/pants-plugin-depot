@@ -1,6 +1,9 @@
+from typing import TYPE_CHECKING
+
 from pants.engine.rules import collect_rules
 
-from pants_plugin_developer_utils import CollectedRules
+if TYPE_CHECKING:
+    from pants_plugin_developer_utils import CollectedRules
 
 
 def rules() -> CollectedRules:

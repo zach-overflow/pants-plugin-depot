@@ -1,26 +1,28 @@
 """Collection of types for common type hints in pantsbuild plugin test code."""
 
 from collections.abc import Iterable
-from typing import Any, NotRequired, Protocol, TypedDict, Unpack
+from typing import TYPE_CHECKING, Any, NotRequired, Protocol, TypedDict, Unpack
 
-from pants.build_graph.build_file_aliases import BuildFileAliases
-from pants.engine.environment import EnvironmentName
-from pants.engine.rules import Rule
-from pants.engine.unions import UnionRule
-from pants.goal.auxiliary_goal import AuxiliaryGoal
-from pants.testutil.rule_runner import QueryRule, RuleRunner
-from pants.util.logging import LogLevel
+if TYPE_CHECKING:
+    from pants.build_graph.build_file_aliases import BuildFileAliases
+    from pants.engine.environment import EnvironmentName
+    from pants.engine.rules import Rule
+    from pants.engine.unions import UnionRule
+    from pants.goal.auxiliary_goal import AuxiliaryGoal
+    from pants.testutil.rule_runner import QueryRule, RuleRunner
+    from pants.util.logging import LogLevel
 
-from pants_plugin_developer_utils import CollectedTargetTypes
+    from pants_plugin_developer_utils import CollectedTargetTypes
 
 
 class RuleRunnerFactory(Protocol):
-    """Type alias for the return type of the `pants_plugin_test_utils.rule_runner_factory` fixture factory."""
+    """Type of the factory returned by the `pants_plugin_developer_utils.testing_utils.rule_runner_factory` fixture."""
 
     def __call__(self, rules: RuleRunnerCollectedRules, **kwargs: Unpack[RuleRunnerOptionalKwargs]) -> RuleRunner: ...
 
 
 type RuleRunnerCollectedRules = Iterable[Rule | UnionRule | QueryRule]
+"""Type alias for the `rules` argument of `pants.testutil.rule_runner.RuleRunner`: plugin rules plus `QueryRule`s."""
 
 
 class RuleRunnerOptionalKwargs(TypedDict):

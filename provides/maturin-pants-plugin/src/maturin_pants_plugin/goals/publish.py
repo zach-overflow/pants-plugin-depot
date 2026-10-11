@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from pants.core.goals.package import PackageFieldSet
 from pants.core.goals.publish import (
@@ -32,7 +33,9 @@ from maturin_pants_plugin.target_types import (
     PyProjectTomlField,
     SkipMaturinUploadField,
 )
-from pants_plugin_developer_utils import CollectedRules
+
+if TYPE_CHECKING:
+    from pants_plugin_developer_utils import CollectedRules
 
 
 class MaturinPublishRequest(PublishRequest):

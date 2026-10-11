@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from pants.backend.python.target_types import (
     PythonSourcesGeneratorTarget,
     PythonSourceTarget,
@@ -6,7 +8,8 @@ from pants.backend.python.target_types import (
 )
 from pants.engine.target import BoolField
 
-from pants_plugin_developer_utils import CollectedRules
+if TYPE_CHECKING:
+    from pants_plugin_developer_utils import CollectedRules
 
 
 class SkipTachLintField(BoolField):

@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from pants.backend.python.subsystems.python_tool_base import PythonToolBase
 from pants.backend.python.target_types import ConsoleScript
 from pants.core.goals.resolves import ExportableTool
@@ -7,7 +9,8 @@ from pants.engine.unions import UnionRule
 from pants.option.option_types import FileOption, SkipOption
 from pants.util.strutil import softwrap
 
-from pants_plugin_developer_utils import CollectedRules
+if TYPE_CHECKING:
+    from pants_plugin_developer_utils import CollectedRules
 
 
 class Tach(PythonToolBase):
