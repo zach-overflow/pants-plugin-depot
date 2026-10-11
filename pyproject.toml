@@ -2,13 +2,13 @@
 
 [tool.ruff]
 target-version = "py314"
-src = ["provides/*/src", "provides/*/tests"]
 line-length = 120
 indent-width = 4
-
-[tool.ruff.lint]
-select = ["E", "F", "UP", "B", "SIM", "I"]
-extend-select = [
+src = [ "provides/*/src", "provides/*/tests" ]
+format.skip-magic-trailing-comma = true
+format.docstring-code-format = true
+lint.select = [ "B", "E", "F", "I", "SIM", "UP" ]
+lint.extend-select = [
   "C416",
   "D101",
   "D107",
@@ -43,7 +43,7 @@ extend-select = [
   "W291",
 ]
 # Ignore rules that conflict with the ruff formatter (https://stackoverflow.com/a/77796620).
-ignore = [
+lint.ignore = [
   "COM812",
   "COM819",
   "D206",
@@ -62,20 +62,66 @@ ignore = [
   "Q003",
   "W191",
 ]
-
-[tool.ruff.lint.per-file-ignores]
-"provides/*/tests/**/*.py" = ["D101", "D107"]
-
-[tool.ruff.lint.isort]
-split-on-trailing-comma = false
-section-order = [
-  "future",
-  "standard-library",
-  "third-party",
-  "first-party",
-  "local-folder",
-]
-known-first-party = [
+lint.per-file-ignores."provides/*/tests/**/*.py" = [ "D101", "D107" ]
+lint.flake8-tidy-imports.ban-relative-imports = "all"
+lint.flake8-tidy-imports.banned-api."functools.cache".msg = """\
+  functools.cache can corrupt Pants' build cache and should not be used.\
+  """
+lint.flake8-tidy-imports.banned-api."functools.cached_property".msg = """\
+  functools.cached_property can corrupt Pants' build cache and should not be used.\
+  """
+lint.flake8-tidy-imports.banned-api."functools.lru_cache".msg = """\
+  functools.lru_cache can corrupt Pants' build cache and should not be used.\
+  """
+lint.flake8-tidy-imports.banned-api."os.close".msg = """\
+  The os module's file I/O operations are not safe to use in Pants plugins. Use Pants' file I/O library as described \
+  here: https://www.pantsbuild.org/stable/docs/writing-plugins/the-rules-api/file-system\
+  """
+lint.flake8-tidy-imports.banned-api."os.fdopen".msg = """\
+  The os module's file I/O operations are not safe to use in Pants plugins. Use Pants' file I/O library as described \
+  here: https://www.pantsbuild.org/stable/docs/writing-plugins/the-rules-api/file-system\
+  """
+lint.flake8-tidy-imports.banned-api."os.fork".msg = """\
+  The os module's fork operations are not safe to use in Pants plugins. Use Pants' process library as described here: \
+  https://www.pantsbuild.org/stable/docs/writing-plugins/the-rules-api/processes\
+  """
+lint.flake8-tidy-imports.banned-api."os.open".msg = """\
+  The os module's file I/O operations are not safe to use in Pants plugins. Use Pants' file I/O library as described \
+  here: https://www.pantsbuild.org/stable/docs/writing-plugins/the-rules-api/file-system\
+  """
+lint.flake8-tidy-imports.banned-api."typing.NamedTuple".msg = """\
+  NamedTuples are incompatible with the Pants engine. Use a frozen Dataclass instead: \
+  https://www.pantsbuild.org/stable/docs/writing-plugins/the-rules-api/concepts\
+  """
+lint.flake8-tidy-imports.banned-api.anyio.msg = "Anyio module is not safe to use in Pants plugins"
+lint.flake8-tidy-imports.banned-api.asyncio.msg = "Asyncio module is not safe to use in Pants plugins"
+lint.flake8-tidy-imports.banned-api.concurrent.msg = """\
+  The concurrent module is not safe to use with Pants plugins.  Use Pants' process library as described here: \
+  https://www.pantsbuild.org/stable/docs/writing-plugins/the-rules-api/processes\
+  """
+lint.flake8-tidy-imports.banned-api.diskcache.msg = """\
+  The diskcache module is not threadsafe, and therefore is not safe for Pants plugins\
+  """
+lint.flake8-tidy-imports.banned-api.filelock.msg = "The filelock module is not safe to use with Pants plugins."
+lint.flake8-tidy-imports.banned-api.multiprocessing.msg = """\
+  The multiprocessing module is not safe to use in Pants plugins.  Use Pants' process library as described here: \
+  https://www.pantsbuild.org/stable/docs/writing-plugins/the-rules-api/processes\
+  """
+lint.flake8-tidy-imports.banned-api.random.msg = "All pants plugin rules should be pure and consistent."
+lint.flake8-tidy-imports.banned-api.shutil.msg = """\
+  The shutil module is unsafe for Pants plugins. Use Pants' process library instead: \
+  https://www.pantsbuild.org/stable/docs/writing-plugins/the-rules-api/processes\
+  """
+lint.flake8-tidy-imports.banned-api.subprocess.msg = """\
+  The subprocess module is unsafe for Pants plugins. Use Pants' process library instead: \
+  https://www.pantsbuild.org/stable/docs/writing-plugins/the-rules-api/processes\
+  """
+lint.flake8-tidy-imports.banned-api.tempfile.msg = """\
+  The tempfile module is unsafe for Pants plugins. Use Pants' file library instead: \
+  https://www.pantsbuild.org/stable/docs/writing-plugins/the-rules-api/file-system\
+  """
+lint.flake8-tidy-imports.banned-api.threading.msg = "The threading module is not safe for Pants plugins."
+lint.isort.known-first-party = [
   "maturin_pants_plugin",
   "maturin_pants_plugin_tests",
   "pants_plugin_developer_utils",
@@ -85,62 +131,38 @@ known-first-party = [
   "tach_pants_plugin",
   "tach_pants_plugin_tests",
 ]
+lint.isort.section-order = [
+  "future",
+  "standard-library",
+  "third-party",
+  "first-party",
+  "local-folder",
+]
+lint.isort.split-on-trailing-comma = false
+lint.pycodestyle.ignore-overlong-task-comments = true
+lint.pydocstyle.convention = "google"
+lint.pydocstyle.ignore-var-parameters = true
 
-[tool.ruff.lint.pycodestyle]
-ignore-overlong-task-comments = true
+[tool.mypy]
+mypy_path = [ "$MYPY_CONFIG_FILE_DIR/provides" ]
+namespace_packages = true
+explicit_package_bases = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+strict_equality = true
+pretty = true
+no_implicit_optional = true
+show_error_codes = true
 
-[tool.ruff.lint.pydocstyle]
-convention = "google"
-ignore-var-parameters = true
-
-[tool.ruff.lint.flake8-tidy-imports]
-ban-relative-imports = "all"
-
-[tool.ruff.lint.flake8-tidy-imports.banned-api]
-"anyio".msg = "Anyio module is not safe to use in Pants plugins"
-"asyncio".msg = "Asyncio module is not safe to use in Pants plugins"
-"concurrent".msg = "The concurrent module is not safe to use with Pants plugins.  Use Pants' process library as described here: https://www.pantsbuild.org/stable/docs/writing-plugins/the-rules-api/processes"
-"diskcache".msg = "The diskcache module is not threadsafe, and therefore is not safe for Pants plugins"
-"filelock".msg = "The filelock module is not safe to use with Pants plugins."
-"functools.cache".msg = "functools.cache can corrupt Pants' build cache and should not be used."
-"functools.cached_property".msg = "functools.cached_property can corrupt Pants' build cache and should not be used."
-"functools.lru_cache".msg = "functools.lru_cache can corrupt Pants' build cache and should not be used."
-"multiprocessing".msg = "The multiprocessing module is not safe to use in Pants plugins.  Use Pants' process library as described here: https://www.pantsbuild.org/stable/docs/writing-plugins/the-rules-api/processes"
-"os.close".msg = "The os module's file I/O operations are not safe to use in Pants plugins. Use Pants' file I/O library as described here: https://www.pantsbuild.org/stable/docs/writing-plugins/the-rules-api/file-system"
-"os.open".msg = "The os module's file I/O operations are not safe to use in Pants plugins. Use Pants' file I/O library as described here: https://www.pantsbuild.org/stable/docs/writing-plugins/the-rules-api/file-system"
-"os.fdopen".msg = "The os module's file I/O operations are not safe to use in Pants plugins. Use Pants' file I/O library as described here: https://www.pantsbuild.org/stable/docs/writing-plugins/the-rules-api/file-system"
-"os.fork".msg = "The os module's fork operations are not safe to use in Pants plugins. Use Pants' process library as described here: https://www.pantsbuild.org/stable/docs/writing-plugins/the-rules-api/processes"
-"random".msg = "All pants plugin rules should be pure and consistent."
-"shutil".msg = "The shutil module is unsafe for Pants plugins. Use Pants' process library instead: https://www.pantsbuild.org/stable/docs/writing-plugins/the-rules-api/processes"
-"subprocess".msg = "The subprocess module is unsafe for Pants plugins. Use Pants' process library instead: https://www.pantsbuild.org/stable/docs/writing-plugins/the-rules-api/processes"
-"tempfile".msg = "The tempfile module is unsafe for Pants plugins. Use Pants' file library instead: https://www.pantsbuild.org/stable/docs/writing-plugins/the-rules-api/file-system"
-"threading".msg = "The threading module is not safe for Pants plugins."
-"typing.NamedTuple".msg = "NamedTuples are incompatible with the Pants engine. Use a frozen Dataclass instead: https://www.pantsbuild.org/stable/docs/writing-plugins/the-rules-api/concepts"
-
-[tool.ruff.format]
-skip-magic-trailing-comma = true
-docstring-code-format = true
-
-[tool.pytest.ini_options]
-minversion = "8.4"
-addopts = [
+[tool.pytest]
+ini_options.minversion = "8.4"
+ini_options.addopts = [
   "--force-short-summary",
   "--tb=line",
   "-p",
   "no:cacheprovider",
   "--strict-markers",
 ]
-
-[tool.mypy]
-explicit_package_bases = true
-check_untyped_defs = true
-disallow_untyped_defs = true
-disallow_untyped_decorators = true
-namespace_packages = true
-no_implicit_optional = true
-pretty = true
-show_error_codes = true
-strict_equality = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-mypy_path = ["$MYPY_CONFIG_FILE_DIR/provides"]
