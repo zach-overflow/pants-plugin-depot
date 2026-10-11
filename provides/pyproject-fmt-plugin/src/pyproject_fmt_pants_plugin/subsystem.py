@@ -22,8 +22,7 @@ class PyprojectFmt(PythonToolBase):
     help_short = "Linter / formatter for `pyproject.toml` files (https://pyproject-fmt.readthedocs.io/en/latest/)."
     default_version = "2.29.4"
 
-    skip = SkipOption("lint")
-    fmt = SkipOption("fmt")
+    skip = SkipOption("fmt", "lint")
 
     config = FileOption(
         default=None,

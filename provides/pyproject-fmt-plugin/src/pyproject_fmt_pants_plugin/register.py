@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 
 from pyproject_fmt_pants_plugin.goals.common import rules as common_rules
 from pyproject_fmt_pants_plugin.goals.fmt import rules as fmt_rules
-from pyproject_fmt_pants_plugin.goals.lint import rules as lint_rules
 from pyproject_fmt_pants_plugin.subsystem import rules as subsystem_rules
 
 if TYPE_CHECKING:
@@ -13,4 +12,4 @@ if TYPE_CHECKING:
 
 def rules() -> CollectedRules:
     """Return every rule this backend registers with the Pants engine."""
-    return (*common_rules(), *fmt_rules(), *lint_rules(), *subsystem_rules())
+    return (*common_rules(), *fmt_rules(), *subsystem_rules())
