@@ -9,7 +9,7 @@ version = "0.2.0"
 # Pants loads plugins into its own interpreter (CPython 3.14 as of Pants 2.33).
 requires-python = ">=3.14"
 # `pantsbuild.pants` is deliberately absent: Pants supplies itself at plugin load time and is not on PyPI.
-dependencies = []
+dependencies = ["pants-plugin-developer-utils>=0.1.0"]
 authors = [{ name = "Zach Gottesman" }]
 maintainers = [{ name = "zach-overflow" }]
 keywords = [
