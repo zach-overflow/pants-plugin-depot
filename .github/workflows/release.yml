@@ -65,17 +65,7 @@ jobs:
       - name: validate-package-input
         env:
           PACKAGE: ${{ inputs.package }}
-        run: |
-          if [[ -z "${PACKAGE}" ]]; then
-            echo "::notice::No package given; releasing every plugin with pending changes."
-            exit 0
-          fi
-          if ! grep -Fxq "[monorepo.packages.${PACKAGE}]" cog.toml; then
-            packages="$(sed -nE 's/^\[monorepo\.packages\.([^]]+)\]$/\1/p' cog.toml)"
-            echo "::error::'${PACKAGE}' is not a package in cog.toml. Valid packages: ${packages//$'\n'/ }"
-            exit 1
-          fi
-          echo "::notice::Releasing only '${PACKAGE}'."
+        run: .github/ci_scripts/release_scripts/validate-package-input.sh
       - name: cog-check
         uses: cocogitto/cocogitto-action@v4.2.0
         with:
@@ -84,21 +74,7 @@ jobs:
       - name: compute-pending-release-tags
         env:
           PACKAGE: ${{ inputs.package }}
-        run: |
-          args=(bump --auto --dry-run)
-          if [[ -n "${PACKAGE}" ]]; then
-            args+=(--package "${PACKAGE}")
-          fi
-          pending="$(cog "${args[@]}")"
-          if ! grep -Eq '^[a-z0-9][a-z0-9-]*-v[0-9]+\.[0-9]+\.[0-9]+$' <<< "${pending}"; then
-            echo "::error::No plugin has a commit that warrants a release (cog printed '${pending}')."
-            exit 1
-          fi
-          if [[ -n "${PACKAGE}" && ! "${pending}" =~ ^${PACKAGE}-v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::'${PACKAGE}' has no commit that warrants a release (cog printed '${pending}')."
-            exit 1
-          fi
-          echo "::notice::Validating ${GITHUB_SHA} for release: ${pending//$'\n'/ }"
+        run: .github/ci_scripts/release_scripts/compute-pending-release-tags.sh
 
   validate:
     name: validate
@@ -167,30 +143,16 @@ jobs:
       tags: ${{ steps.push.outputs.tags }}
     steps:
       # A rejected token makes checkout fail with the misleading "could not read Username for
-      # 'https://github.com'", so check the token first and say what is wrong with it.
+      # 'https://github.com'", so check the token first and say what is wrong with it. The check is a
+      # script in the repo, so fetch it with the default token before the RELEASE_TOKEN checkout.
+      - name: checkout-ci-scripts
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: check-release-token
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        run: |
-          if [[ -z "${GH_TOKEN}" ]]; then
-            echo "::error::The 'release' environment has no RELEASE_TOKEN secret."
-            exit 1
-          fi
-          if ! login="$(gh api user --jq .login)"; then
-            echo "::error::GitHub rejected RELEASE_TOKEN. Re-create the token and update the secret."
-            exit 1
-          fi
-          if ! admin="$(gh api "repos/${GITHUB_REPOSITORY}" --jq .permissions.admin)"; then
-            echo "::error::RELEASE_TOKEN (user '${login}') cannot access ${GITHUB_REPOSITORY}. Grant the token this \
-          repository."
-            exit 1
-          fi
-          if [[ "${admin}" != "true" ]]; then
-            echo "::error::RELEASE_TOKEN belongs to '${login}', who is not an admin of ${GITHUB_REPOSITORY}. Only an \
-          admin's push bypasses the default branch's protection."
-            exit 1
-          fi
-          echo "::notice::RELEASE_TOKEN authenticates as '${login}' (admin)."
+        run: .github/ci_scripts/release_scripts/check-release-token.sh
       - name: checkout
         uses: actions/checkout@v4
         with:
@@ -216,22 +178,7 @@ jobs:
         id: push
         env:
           PACKAGE: ${{ inputs.package }}
-        run: |
-          mapfile -t tags < <(git tag --points-at HEAD)
-          if [[ "$(git rev-parse HEAD)" == "${GITHUB_SHA}" || "${#tags[@]}" -eq 0 ]]; then
-            echo "::error::cog created no bump commit or no tag on top of ${GITHUB_SHA}."
-            exit 1
-          fi
-          if [[ -n "${PACKAGE}" ]]; then
-            for tag in "${tags[@]}"; do
-              if [[ "${tag}" != "${PACKAGE}-v"* ]]; then
-                echo "::error::Release is scoped to '${PACKAGE}' but HEAD carries the tag '${tag}'. Nothing was pushed."
-                exit 1
-              fi
-            done
-          fi
-          git push --atomic origin "HEAD:${GITHUB_REF_NAME}" "${tags[@]}"
-          echo "tags=${tags[*]}" >> "$GITHUB_OUTPUT"
+        run: .github/ci_scripts/release_scripts/push-bump-and-tags.sh
       # A tag is `<plugin-name>-vX.Y.Z`, and the plugin's directory under `provides/` carries the same name.
       # Its notes are the newest section of `provides/<plugin-name>/CHANGELOG.md`: from the tag's heading to
       # the next `- - -`.
@@ -239,28 +186,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAGS: ${{ steps.push.outputs.tags }}
-        run: |
-          read -ra tags <<< "${TAGS}"
-          for tag in "${tags[@]}"; do
-            package="${tag%-v*}"
-            changelog="provides/${package}/CHANGELOG.md"
-            awk -v heading="## [${tag}]" '
-              index($0, heading) == 1 { found = 1; next }
-              found && /^- - -$/ { exit }
-              found { print }
-            ' "${changelog}" > release-notes.md
-            if ! grep -q '[^[:space:]]' release-notes.md; then
-              echo "::error::Found no section for ${tag} in ${changelog}."
-              exit 1
-            fi
-            gh release create "${tag}" \
-              --title "${package} ${tag##*-v}" \
-              --notes-file release-notes.md \
-              --verify-tag \
-              --draft
-            echo "::notice::Tagged $(git rev-parse HEAD) as ${tag} and drafted the GitHub release; \
-          Publish attaches the wheel and publishes it."
-          done
+        run: .github/ci_scripts/release_scripts/draft-github-release.sh
 
   # Dispatch (not `workflow_call`) so Publish runs as its own top-level workflow: PyPI trusted publishing
   # rejects reusable workflows, and each plugin's registered publisher is pinned to `publish.yml`. One run
@@ -271,16 +197,12 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       actions: write
+      contents: read # a job-level block replaces the workflow default; checkout needs it
     steps:
+      - name: checkout
+        uses: actions/checkout@v4
       - name: dispatch-publish
         env:
           GH_TOKEN: ${{ github.token }}
           TAGS: ${{ needs.approve-and-tag.outputs.tags }}
-        run: |
-          read -ra tags <<< "${TAGS}"
-          for tag in "${tags[@]}"; do
-            gh workflow run publish.yml \
-              --repo "${GITHUB_REPOSITORY}" \
-              --ref "${tag}" \
-              -f tag="${tag}"
-          done
+        run: .github/ci_scripts/release_scripts/dispatch-publish.sh
