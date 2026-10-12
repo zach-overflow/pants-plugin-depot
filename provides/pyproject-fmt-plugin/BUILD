@@ -12,6 +12,7 @@ python_distribution(
         ":readme",
         "provides/pyproject-fmt-plugin/src/pyproject_fmt_pants_plugin",
         "provides/pyproject-fmt-plugin/src/pyproject_fmt_pants_plugin:pytyped-marker",
+        "provides/pyproject-fmt-plugin/src/pyproject_fmt_pants_plugin:scm-version",
         "provides/pyproject-fmt-plugin/src/pyproject_fmt_pants_plugin/goals",
         "provides/pyproject-fmt-plugin/src/pyproject_fmt_pants_plugin/lockfile_resource:lockfile-resource-module",
     ],

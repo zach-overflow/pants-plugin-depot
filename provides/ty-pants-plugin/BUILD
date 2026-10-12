@@ -12,6 +12,7 @@ python_distribution(
         ":readme",
         "provides/ty-pants-plugin/src/ty_pants_plugin",
         "provides/ty-pants-plugin/src/ty_pants_plugin:pytyped-marker",
+        "provides/ty-pants-plugin/src/ty_pants_plugin:scm-version",
     ],
     provides=python_artifact(name="ty-pants-plugin"),
     sdist=False,

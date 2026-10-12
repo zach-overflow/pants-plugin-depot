@@ -41,3 +41,6 @@ packages.find.where = [ "src" ]
 packages.find.include = [ "tach_pants_plugin*" ]
 package-data."tach_pants_plugin.tach_lockfile_resource" = [ "tach_pants_plugin.json" ]
 package-data.tach_pants_plugin = [ "py.typed" ]
+# The `scm_version` target in `src/tach_pants_plugin/BUILD` generates `version.py` from the git tags at build time;
+# setuptools reads its literal statically.
+dynamic.version = { attr = "tach_pants_plugin.version.__version__" }

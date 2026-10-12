@@ -19,6 +19,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          # setuptools-scm derives each wheel's version from the plugin's tags and the distance to HEAD; a
+          # shallow clone has neither.
+          fetch-depth: 0
 
       - name: Lint GitHub Actions workflows
         # No Pants backend for actionlint, so the shared hook runs it directly (downloads a pinned binary).

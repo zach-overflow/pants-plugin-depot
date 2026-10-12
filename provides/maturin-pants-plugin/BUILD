@@ -16,6 +16,7 @@ python_distribution(
         ":readme",
         "provides/maturin-pants-plugin/src/maturin_pants_plugin",
         "provides/maturin-pants-plugin/src/maturin_pants_plugin:pytyped-marker",
+        "provides/maturin-pants-plugin/src/maturin_pants_plugin:scm-version",
         "provides/maturin-pants-plugin/src/maturin_pants_plugin/goals",
         "provides/maturin-pants-plugin/src/maturin_pants_plugin/lockfile_resource:lockfile-resource-module",
     ],

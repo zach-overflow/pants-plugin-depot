@@ -18,10 +18,11 @@ Each plugin is a separate Python distribution in its own directory under the top
 provides/
   <plugin-name>/
     BUILD            # the `plugin-whl` python_distribution
-    pyproject.toml   # packaging metadata, version and runtime dependencies of this plugin
+    pyproject.toml   # packaging metadata and runtime dependencies of this plugin (the version comes from git tags)
     README.md
     CHANGELOG.md     # written by `cog bump`
     src/<root_module>/
+      version.py     # generated from the plugin's git tags at build time; never committed
     tests/<root_module>_tests/
 ```
 
@@ -41,6 +42,8 @@ pants check ::                          # mypy
 pants test ::                           # pytest
 pants package ::                        # build every plugin's wheel -> dist/
 pants generate-lockfiles                # regenerate 3rdparty/python/plugin-lockfile.json
+pants generate-lockfiles --resolve=setuptools-scm   # regenerate the bundled setuptools-scm tool lockfile
+pants export-codegen provides/<plugin-name>/src/<root_module>:scm-version   # preview version.py -> dist/codegen/
 pants export --resolve=plugin-resolve   # virtualenv for IDEs -> dist/export/
 ```
 
@@ -78,12 +81,22 @@ runtime; tests are not shipped.
 
 ## Versioning
 
-Each plugin carries its own version, committed as `[project].version` in
-`provides/<plugin-name>/pyproject.toml`. It MUST NOT be edited by hand. `cog bump` rewrites it, updates
-`provides/<plugin-name>/CHANGELOG.md`, and tags the commit `<plugin-name>-vMAJOR.MINOR.PATCH`. There is no
-repo-wide version.
+Each plugin carries its own version, and its git tags are the only place that version lives. `cog bump`
+updates `provides/<plugin-name>/CHANGELOG.md` and tags the commit `<plugin-name>-vMAJOR.MINOR.PATCH`. There
+is no repo-wide version, and no `pyproject.toml` MAY declare a static `[project].version`.
 
-Between releases, a wheel built from `main` carries the last released version.
+At build time the in-repo `setuptools-scm-pants-plugin` (see its README) derives the version from the latest
+`<plugin-name>-v*` tag reachable from `HEAD`: the `scm_version` target in `src/<root_module>/BUILD` runs
+setuptools-scm and generates `<root_module>/version.py`, which setuptools reads through
+`[tool.setuptools] dynamic.version` in the plugin's `pyproject.toml`. The module is packaged into the wheel
+but never written to the source tree. The wheel's version is:
+
+- `X.Y.Z` on a checkout of the `<plugin-name>-vX.Y.Z` tag,
+- `X.Y.(Z+1).devN+g<sha>` N commits after that tag (what a build from `main` produces),
+- the same with `.dYYYYMMDD` appended when the working tree is dirty,
+- `0.1.devN+g<sha>` for a plugin that was never tagged.
+
+setuptools-scm needs the full history and all tags, so CI checkouts use `fetch-depth: 0`.
 
 ## Conventional commits
 
@@ -104,7 +117,7 @@ part. A commit that touches two plugins bumps both. A commit that touches only r
 2. Run the *Release* workflow from `main` (Actions -> Release -> Run workflow). It:
    - checks the pending commits are conventional and that at least one plugin warrants a bump,
    - runs `pants lint check test ::` and builds the wheels,
-   - runs `cog bump --auto`, which bumps every plugin with pending changes in one
+   - runs `cog bump --auto`, which updates the changelog of every plugin with pending changes in one
      `chore(version): bump packages` commit and tags it once per bumped plugin,
    - pushes that commit and the tags to `main`,
    - creates one **draft** GitHub release per tag from the plugin's changelog,
@@ -114,8 +127,12 @@ part. A commit that touches two plugins bumps both. A commit that touches only r
 
 ## Adding a plugin
 
-1. Create `provides/<plugin-name>/` following the layout above. Copy `provides/pyproject-fmt-plugin/BUILD`
-   and `provides/pyproject-fmt-plugin/pyproject.toml` as a starting point. Set `version = "0.0.0"`.
+1. Create `provides/<plugin-name>/` following the layout above. Copy `provides/ty-pants-plugin/BUILD`,
+   `provides/ty-pants-plugin/src/ty_pants_plugin/BUILD` and `provides/ty-pants-plugin/pyproject.toml` as a
+   starting point. Do not set a version: keep `dynamic = ["version"]` and
+   `[tool.setuptools] dynamic.version = { attr = "<root_module>.version.__version__" }`, and keep the
+   `scm_version` target with `tag_prefix="<plugin-name>-v"` in `src/<root_module>/BUILD`, depended on by
+   both `python_sources` and `plugin-whl`.
 2. Keep the distribution target named `plugin-whl`. The Publish workflow builds
    `provides/<plugin-name>:plugin-whl`.
 3. Register the plugin in `cog.toml`: add `[monorepo.packages.<plugin-name>]` with
@@ -152,8 +169,11 @@ part. A commit that touches two plugins bumps both. A commit that touches only r
 - **`approve-and-tag` fails with "moved past the validated commit"**: a PR merged while the release was
   running. Re-run the Release workflow.
 - **`approve-and-tag` fails on `git push`**: `RELEASE_TOKEN` is missing, expired, or not an admin's token.
-- **`build-wheel` finds no wheel for the version**: `[project].version` at the tag differs from the tag.
-  The tag was not created by `cog bump`.
+- **`build-wheel` finds no wheel for the version**: setuptools-scm did not see the tag on `HEAD`. The
+  checkout was shallow, the tag is not the one on `HEAD`, or the tree was dirty, so the wheel carries a dev or
+  local version. Check with `pants export-codegen provides/<plugin-name>/src/<root_module>:scm-version`.
+- **`scm_version` fails with "Cannot determine the version"**: there is no git worktree, e.g. the build runs
+  from an exported tarball instead of a clone.
 - **PyPI publish fails with an OIDC error**: the plugin's registered Trusted Publisher must match exactly.
 - **`publish-release` fails because no GitHub release exists**: the tag was pushed by hand, or the Release
   run failed after pushing. Create the release as a draft, then run Publish with the tag:

@@ -15,6 +15,7 @@ python_distribution(
         ":readme",
         "provides/pants-plugin-developer-utils/src/pants_plugin_developer_utils",
         "provides/pants-plugin-developer-utils/src/pants_plugin_developer_utils:pytyped-marker",
+        "provides/pants-plugin-developer-utils/src/pants_plugin_developer_utils:scm-version",
         "provides/pants-plugin-developer-utils/src/pants_plugin_developer_utils/testing_utils",
     ],
     provides=python_artifact(name="pants-plugin-developer-utils"),

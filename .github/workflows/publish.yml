@@ -52,12 +52,13 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     steps:
-      # The tagged commit is the bump commit, so `provides/<plugin-name>/pyproject.toml` carries the tag's
-      # version.
+      # The tag sits on HEAD, so setuptools-scm resolves exactly `<version>` (no dev or local suffix). It
+      # needs the full history and every tag to run `git describe`.
       - name: Checkout release tag
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.tag }}
+          fetch-depth: 0
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
@@ -69,8 +70,8 @@ jobs:
           named-caches-hash: ${{ hashFiles('3rdparty/**/*-lockfile.json') }}
           cache-lmdb-store: 'true'
 
-      # The plugin's directory under `provides/` carries the tag's plugin name. A missing wheel means the
-      # committed version and the tag disagree.
+      # The plugin's directory under `provides/` carries the tag's plugin name. A missing wheel means
+      # setuptools-scm did not see the tag on HEAD (shallow or dirty checkout).
       - name: Build wheel
         env:
           PACKAGE: ${{ needs.setup.outputs.package }}
