@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [pyproject-fmt-pants-plugin-v0.3.0](https://github.com/zach-overflow/pants-plugin-depot/compare/c61a96c10f0cc92aeefe871a8be6e14aa4f6478f..pyproject-fmt-pants-plugin-v0.3.0) - 2026-10-12
+
+#### Features
+
+- (**vcs-versioning-pants-plugin**) initial `vcs-versioning-pants-plugin` impl (#14) - ([c61a96c](https://github.com/zach-overflow/pants-plugin-depot/commit/c61a96c10f0cc92aeefe871a8be6e14aa4f6478f)) - [@zach-overflow](https://github.com/zach-overflow)
+
+- - -
+
 ## [pyproject-fmt-plugin-v0.2.1](https://github.com/zach-overflow/pants-plugin-depot/compare/e887039570b724736a1542f5192b935293851ee3..pyproject-fmt-plugin-v0.2.1) - 2026-10-11
 
 #### Bug Fixes
