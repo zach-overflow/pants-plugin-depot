@@ -128,6 +128,8 @@ lint.isort.known-first-party = [
   "pants_plugin_developer_utils_tests",
   "pyproject_fmt_pants_plugin",
   "pyproject_fmt_pants_plugin_tests",
+  "setuptools_scm_pants_plugin",
+  "setuptools_scm_pants_plugin_tests",
   "tach_pants_plugin",
   "tach_pants_plugin_tests",
   "ty_pants_plugin",
