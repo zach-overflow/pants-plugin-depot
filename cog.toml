@@ -16,6 +16,7 @@ scopes = [
   "hooks",
   "maturin-pants-plugin",
   "pants-plugin-developer-utils",
+  "pyproject-fmt-pants-plugin",
   "pyproject-fmt-plugin",
   "rules",
   "subsystem",
@@ -63,8 +64,8 @@ path = "provides/maturin-pants-plugin"
 [monorepo.packages.pants-plugin-developer-utils]
 path = "provides/pants-plugin-developer-utils"
 
-[monorepo.packages.pyproject-fmt-plugin]
-path = "provides/pyproject-fmt-plugin"
+[monorepo.packages.pyproject-fmt-pants-plugin]
+path = "provides/pyproject-fmt-pants-plugin"
 
 [monorepo.packages.ty-pants-plugin]
 path = "provides/ty-pants-plugin"

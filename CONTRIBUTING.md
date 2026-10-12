@@ -47,7 +47,7 @@ pants export-codegen provides/<plugin-name>/src/<root_module>:scm-version   # pr
 pants export --resolve=plugin-resolve   # virtualenv for IDEs -> dist/export/
 ```
 
-Append a directory to scope a goal to one plugin, e.g. `pants test provides/pyproject-fmt-plugin::`.
+Append a directory to scope a goal to one plugin, e.g. `pants test provides/pyproject-fmt-pants-plugin::`.
 
 ## Dependencies
 

@@ -96,7 +96,7 @@ class Ty(TemplatedExternalTool):
             specified_option_name=f"[{self.options_scope}].config",
             discovery=self.config_discovery,
             check_existence=["ty.toml"],
-            check_content={"pyproject.toml": b"[tool.ty"},
+            check_content={"pyproject.toml": b"[tool.ty]"},
         )
 
     def generate_exe(self, plat: Platform) -> str:

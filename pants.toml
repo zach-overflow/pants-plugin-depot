@@ -17,7 +17,7 @@ backend_packages = [
 pants_version = "2.33.1"
 # https://www.pantsbuild.org/stable/docs/writing-plugins/overview#in-repo-plugins
 pythonpath = [
-  "%(buildroot)s/provides/pyproject-fmt-plugin/src",
+  "%(buildroot)s/provides/pyproject-fmt-pants-plugin/src",
   "%(buildroot)s/provides/vcs-versioning-pants-plugin/src",
 ]
 build_patterns = ["BUILD", "BUILD.*"]
