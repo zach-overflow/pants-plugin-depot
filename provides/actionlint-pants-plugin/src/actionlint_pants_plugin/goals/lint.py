@@ -65,7 +65,7 @@ class ActionlintRequest(LintTargetsRequest):
     """Unique type for triggering an `actionlint` run as part of the `pants lint` goal."""
 
     field_set_type = ActionlintFieldSet
-    tool_subsystem = Actionlint  # type: ignore[assignment]
+    tool_subsystem = Actionlint  # ty: ignore[invalid-assignment]
     partitioner_type = PartitionerType.DEFAULT_SINGLE_PARTITION
 
 

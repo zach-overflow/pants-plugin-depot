@@ -27,7 +27,7 @@ class Actionlint(TemplatedExternalTool):
 
     default_version = "1.7.12"
     # Compute with: `curl -L $URL | tee >(wc -c) >(shasum -a 256) >/dev/null`
-    # Pants declares these class attributes without `ClassVar`, so mypy rejects annotating them here.
+    # Pants declares these class attributes without `ClassVar`, so `ty` rejects a `ClassVar` annotation here.
     default_known_versions = [  # noqa: RUF012
         "1.7.12|linux_arm64 |325e971b6ba9bfa504672e29be93c24981eeb1c07576d730e9f7c8805afff0c6|2111482",
         "1.7.12|linux_x86_64|8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8|2353908",
@@ -39,7 +39,7 @@ class Actionlint(TemplatedExternalTool):
         "https://github.com/rhysd/actionlint/releases/download/v{version}/actionlint_{version}_{platform}.tar.gz"
     )
     # Go binaries are statically linked, so one Linux build runs on any distribution.
-    default_url_platform_mapping = {  # noqa: RUF012
+    default_url_platform_mapping: dict[str, str] = {  # noqa: RUF012
         "linux_arm64": "linux_arm64",
         "linux_x86_64": "linux_amd64",
         "macos_arm64": "darwin_arm64",

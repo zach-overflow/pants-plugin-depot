@@ -9,6 +9,7 @@ format.skip-magic-trailing-comma = true
 format.docstring-code-format = true
 lint.select = [ "B", "E", "F", "I", "SIM", "UP" ]
 lint.extend-select = [
+  "ANN",
   "C416",
   "D101",
   "D107",
@@ -44,6 +45,8 @@ lint.extend-select = [
 ]
 # Ignore rules that conflict with the ruff formatter (https://stackoverflow.com/a/77796620).
 lint.ignore = [
+  # Explicit `Any` annotations are allowed.
+  "ANN401",
   "COM812",
   "COM819",
   "D206",
@@ -63,6 +66,8 @@ lint.ignore = [
   "W191",
 ]
 lint.per-file-ignores."provides/*/tests/**/*.py" = [ "D101", "D107" ]
+# Like mypy, accept `__init__` without `-> None` when a parameter is annotated.
+lint.flake8-annotations.mypy-init-return = true
 lint.flake8-tidy-imports.ban-relative-imports = "all"
 lint.flake8-tidy-imports.banned-api."functools.cache".msg = """\
   functools.cache can corrupt Pants' build cache and should not be used.\
@@ -151,19 +156,18 @@ lint.pycodestyle.ignore-overlong-task-comments = true
 lint.pydocstyle.convention = "google"
 lint.pydocstyle.ignore-var-parameters = true
 
-[tool.mypy]
-mypy_path = [ "$MYPY_CONFIG_FILE_DIR/provides" ]
-namespace_packages = true
-explicit_package_bases = true
-disallow_untyped_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-strict_equality = true
-pretty = true
-no_implicit_optional = true
-show_error_codes = true
+# `ty` runs through the in-repo `ty-pants-plugin`; Pants supplies the search paths and Python version.
+# Missing annotations are Ruff's job (`ANN`): `ty` has no rule for them.
+[tool.ty]
+# mypy `disallow_untyped_decorators`
+rules.dynamic-function-decorator-return = "error"
+# mypy `warn_redundant_casts`
+rules.redundant-cast = "error"
+# mypy `strict_equality`
+rules.redundant-condition = "error"
+# mypy `warn_unused_ignores`
+rules.unused-ignore-comment = "error"
+rules.unused-type-ignore-comment = "error"
 
 [tool.pytest]
 ini_options.minversion = "8.4"

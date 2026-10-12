@@ -42,11 +42,12 @@ class PyprojectFmtResult:
 
 def common_partition_pyproject_toml_inputs(skip: bool, files: Iterable[str]) -> Partitions:
     """Helper for partitioning the subject pyproject.toml files, regardless of goal being invoked."""
+    files = tuple(files)
     if skip or not files:
         return Partitions()
 
     return Partitions.single_partition(
-        sorted(FilespecMatcher(includes=["**/pyproject.toml"], excludes=[]).matches(tuple(files)))
+        sorted(FilespecMatcher(includes=["**/pyproject.toml"], excludes=[]).matches(files))
     )
 
 

@@ -7,12 +7,12 @@ backend_packages = [
   "pants.backend.experimental.tools.yamllint",
   "pants.backend.plugin_development",
   "pants.backend.python",
-  "pants.backend.python.typecheck.mypy",
   "pants.backend.shell",
   "pants.backend.shell.lint.shellcheck",
   "pants.backend.shell.lint.shfmt",
   "pants.backend.tools.taplo",
   "pyproject_fmt_pants_plugin",
+  "ty_pants_plugin",
   "typos_pants_plugin",
   "vcs_versioning_pants_plugin",
 ]
@@ -21,6 +21,7 @@ pants_version = "2.33.1"
 pythonpath = [
   "%(buildroot)s/provides/actionlint-pants-plugin/src",
   "%(buildroot)s/provides/pyproject-fmt-pants-plugin/src",
+  "%(buildroot)s/provides/ty-pants-plugin/src",
   "%(buildroot)s/provides/typos-pants-plugin/src",
   "%(buildroot)s/provides/vcs-versioning-pants-plugin/src",
 ]
@@ -91,9 +92,6 @@ maturin = "provides/maturin-pants-plugin/src/maturin_pants_plugin/lockfile_resou
 # Plugins share one resolve but each declares its own requirements. When two plugins declare the same
 # requirement, an import resolves to the target in the importing plugin's own directory.
 ambiguity_resolution = "by_source_root"
-
-[mypy]
-config = "pyproject.toml"
 
 [pytest]
 args = ["-vv"]

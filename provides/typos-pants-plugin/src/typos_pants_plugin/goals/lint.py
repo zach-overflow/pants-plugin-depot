@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 class TyposLintRequest(LintFilesRequest):
     """Unique type for triggering a `typos` check-mode run as part of the `pants lint` goal."""
 
-    tool_subsystem = Typos  # type: ignore[assignment]
+    tool_subsystem = Typos  # ty: ignore[invalid-assignment]
 
 
 @rule(desc="Partition the files for `typos` to check", level=LogLevel.DEBUG)

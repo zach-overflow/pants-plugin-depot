@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 class TyposFixRequest(FixFilesRequest):
     """Unique type for triggering a `typos --write-changes` run as part of the `pants fix` goal."""
 
-    tool_subsystem = Typos  # type: ignore[assignment]
+    tool_subsystem = Typos  # ty: ignore[invalid-assignment]
     # `pants lint` runs `typos` in check mode through `TyposLintRequest` rather than diffing this fixer's
     # output: `typos` only writes corrections for typos with a single candidate, and never renames files, so
     # the check mode reports strictly more than what a `fix` run changes.

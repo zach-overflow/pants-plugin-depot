@@ -28,17 +28,17 @@ provides/
 
 Every plugin MUST live in `provides/<plugin-name>/`. Everything outside `provides/` is shared repo tooling.
 
-The root `pyproject.toml` holds only the repo-wide tool configuration (ruff, pytest, mypy).
+The root `pyproject.toml` holds only the repo-wide tool configuration (ruff, pytest, ty).
 
 Test modules live in a `<root_module>_tests` package, not directly in `tests/`. Every plugin has a
-`conftest.py`, and mypy rejects two modules with the same name in one `pants check ::` run.
+`conftest.py`, and same-named modules MUST NOT collide in one `pants check ::` or `pants test ::` run.
 
 ## Common commands
 
 ```bash
 pants fmt fix ::                        # ruff, shfmt, taplo, typos, BUILD file formatting
 pants lint ::                           # actionlint, ruff, shellcheck, shfmt, taplo, typos, yamllint
-pants check ::                          # mypy
+pants check ::                          # ty
 pants test ::                           # pytest
 pants package ::                        # build every plugin's wheel -> dist/
 pants generate-lockfiles                # regenerate 3rdparty/python/plugin-lockfile.json
@@ -54,7 +54,8 @@ Append a directory to scope a goal to one plugin, e.g. `pants test provides/pypr
 There is one resolve, `plugin-resolve`, shared by every plugin. It holds Pants itself (via the
 `pants_requirements` target in the root `BUILD`) and each plugin's dependencies. `pytest` comes from the
 `testing` extra of `provides/pants-plugin-developer-utils/pyproject.toml`; every plugin's tests resolve to
-that one target. Pants' builtin tools (ruff, mypy, pytest, ...) use the default versions Pants ships with.
+that one target. Pants' builtin tools (ruff, pytest, ...) use the default versions Pants ships with. `ty`
+runs through the in-repo `ty-pants-plugin`, which pins the `ty` binary version it downloads.
 
 A plugin declares its runtime dependencies in `[project].dependencies` of its own `pyproject.toml`. That
 list is what the wheel requires. To make Pants see it, the plugin's `BUILD` needs:
