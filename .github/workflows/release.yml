@@ -9,7 +9,7 @@ run-name: Release from ${{ github.ref_name }} by ${{ github.actor }}
 #      `[monorepo.packages]`). Per bumped plugin it updates `provides/<plugin-name>/CHANGELOG.md` and tags
 #      `<plugin-name>-vX.Y.Z`. The changelogs land in ONE `chore(version): bump packages` commit, which is
 #      pushed to the default branch with the tags. Nothing in the tree carries a version: the wheels read
-#      theirs from the tags via setuptools-scm at build time.
+#      theirs from the tags via vcs-versioning at build time.
 #   3. Per tag, a DRAFT GitHub release is created with that plugin's changelog section as its body, and
 #      the Publish workflow is dispatched (see the `publish` job below for why it is dispatched rather than
 #      `push`-triggered or called as a reusable workflow). Publish attaches the wheel to the draft and only
@@ -72,7 +72,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          # setuptools-scm derives each wheel's version from the plugin's tags and the distance to HEAD; a
+          # vcs-versioning derives each wheel's version from the plugin's tags and the distance to HEAD; a
           # shallow clone has neither.
           fetch-depth: 0
 

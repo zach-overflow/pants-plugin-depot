@@ -6,8 +6,8 @@ from pants.backend.python.dependency_inference.module_mapper import (
 from pants.engine.addresses import Address
 from pants.testutil.rule_runner import RuleRunner
 
-from setuptools_scm_pants_plugin.module_mapper import ScmVersionMappingMarker
-from setuptools_scm_pants_plugin_tests.conftest import scm_version_build
+from vcs_versioning_pants_plugin.module_mapper import ScmVersionMappingMarker
+from vcs_versioning_pants_plugin_tests.conftest import scm_version_build
 
 
 def test_generated_module_is_mapped_for_dependency_inference(scm_rule_runner: RuleRunner) -> None:

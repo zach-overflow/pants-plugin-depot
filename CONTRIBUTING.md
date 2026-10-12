@@ -42,7 +42,7 @@ pants check ::                          # mypy
 pants test ::                           # pytest
 pants package ::                        # build every plugin's wheel -> dist/
 pants generate-lockfiles                # regenerate 3rdparty/python/plugin-lockfile.json
-pants generate-lockfiles --resolve=setuptools-scm   # regenerate the bundled setuptools-scm tool lockfile
+pants generate-lockfiles --resolve=vcs-versioning   # regenerate the bundled vcs-versioning tool lockfile
 pants export-codegen provides/<plugin-name>/src/<root_module>:scm-version   # preview version.py -> dist/codegen/
 pants export --resolve=plugin-resolve   # virtualenv for IDEs -> dist/export/
 ```
@@ -85,9 +85,9 @@ Each plugin carries its own version, and its git tags are the only place that ve
 updates `provides/<plugin-name>/CHANGELOG.md` and tags the commit `<plugin-name>-vMAJOR.MINOR.PATCH`. There
 is no repo-wide version, and no `pyproject.toml` MAY declare a static `[project].version`.
 
-At build time the in-repo `setuptools-scm-pants-plugin` (see its README) derives the version from the latest
+At build time the in-repo `vcs-versioning-pants-plugin` (see its README) derives the version from the latest
 `<plugin-name>-v*` tag reachable from `HEAD`: the `scm_version` target in `src/<root_module>/BUILD` runs
-setuptools-scm and generates `<root_module>/version.py`, which setuptools reads through
+vcs-versioning and generates `<root_module>/version.py`, which setuptools reads through
 `[tool.setuptools] dynamic.version` in the plugin's `pyproject.toml`. The module is packaged into the wheel
 but never written to the source tree. The wheel's version is:
 
@@ -96,7 +96,7 @@ but never written to the source tree. The wheel's version is:
 - the same with `.dYYYYMMDD` appended when the working tree is dirty,
 - `0.1.devN+g<sha>` for a plugin that was never tagged.
 
-setuptools-scm needs the full history and all tags, so CI checkouts use `fetch-depth: 0`.
+vcs-versioning needs the full history and all tags, so CI checkouts use `fetch-depth: 0`.
 
 ## Conventional commits
 
@@ -169,7 +169,7 @@ part. A commit that touches two plugins bumps both. A commit that touches only r
 - **`approve-and-tag` fails with "moved past the validated commit"**: a PR merged while the release was
   running. Re-run the Release workflow.
 - **`approve-and-tag` fails on `git push`**: `RELEASE_TOKEN` is missing, expired, or not an admin's token.
-- **`build-wheel` finds no wheel for the version**: setuptools-scm did not see the tag on `HEAD`. The
+- **`build-wheel` finds no wheel for the version**: vcs-versioning did not see the tag on `HEAD`. The
   checkout was shallow, the tag is not the one on `HEAD`, or the tree was dirty, so the wheel carries a dev or
   local version. Check with `pants export-codegen provides/<plugin-name>/src/<root_module>:scm-version`.
 - **`scm_version` fails with "Cannot determine the version"**: there is no git worktree, e.g. the build runs

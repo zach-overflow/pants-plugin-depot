@@ -19,18 +19,18 @@ from pants_plugin_developer_utils.testing_utils import (
     RuleRunnerFactory,
     rule_runner_factory,  # noqa: F401
 )
-from setuptools_scm_pants_plugin import codegen, module_mapper, subsystem
-from setuptools_scm_pants_plugin.codegen import GenerateScmVersionRequest
-from setuptools_scm_pants_plugin.module_mapper import ScmVersionMappingMarker
-from setuptools_scm_pants_plugin.target_types import ScmVersionTarget
+from vcs_versioning_pants_plugin import codegen, module_mapper, subsystem
+from vcs_versioning_pants_plugin.codegen import GenerateScmVersionRequest
+from vcs_versioning_pants_plugin.module_mapper import ScmVersionMappingMarker
+from vcs_versioning_pants_plugin.target_types import ScmVersionTarget
 
 
 @pytest.fixture(scope="function")
 def scm_rule_runner(rule_runner_factory: RuleRunnerFactory) -> RuleRunner:  # noqa: F811
     """
-    Integration `RuleRunner`: builds the real setuptools-scm venv from the bundled lockfile (network).
+    Integration `RuleRunner`: builds the real vcs-versioning venv from the bundled lockfile (network).
 
-    One runner per git scenario: the setuptools-scm process caches per session, so re-requesting a target after
+    One runner per git scenario: the vcs-versioning process caches per session, so re-requesting a target after
     changing the git state returns the stale version.
     """
     rule_runner = rule_runner_factory(

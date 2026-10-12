@@ -3,9 +3,9 @@ build-backend = "setuptools.build_meta"
 requires = [ "setuptools>=84.0.0" ]
 
 [project]
-name = "setuptools-scm-pants-plugin"
+name = "vcs-versioning-pants-plugin"
 description = """\
-  A Pantsbuild plugin that generates version modules from git tags with setuptools-scm, with per-package tag prefixes \
+  A Pantsbuild plugin that generates version modules from git tags with vcs-versioning, with per-package tag prefixes \
   for monorepos.\
   """
 readme = "README.md"
@@ -17,6 +17,7 @@ keywords = [
   "pants plugin",
   "pantsbuild",
   "setuptools-scm",
+  "vcs-versioning",
   "versioning",
 ]
 license = "Apache-2.0"
@@ -39,18 +40,18 @@ dynamic = [ "version" ]
 dependencies = [ "pants-plugin-developer-utils>=0.1.0" ]
 urls."Bug Tracker" = "https://github.com/zach-overflow/pants-plugin-depot/issues"
 urls.Changelog = """\
-  https://github.com/zach-overflow/pants-plugin-depot/blob/main/provides/setuptools-scm-pants-plugin/CHANGELOG.md\
+  https://github.com/zach-overflow/pants-plugin-depot/blob/main/provides/vcs-versioning-pants-plugin/CHANGELOG.md\
   """
 urls.Repository = "https://github.com/zach-overflow/pants-plugin-depot"
 
 [tool.setuptools]
 packages.find.where = [ "src" ]
-packages.find.include = [ "setuptools_scm_pants_plugin*" ]
-package-data."setuptools_scm_pants_plugin.lockfile_resource" = [
-  "setuptools_scm_lockfile.json",
-  "setuptools_scm_lockfile.json.metadata",
+packages.find.include = [ "vcs_versioning_pants_plugin*" ]
+package-data."vcs_versioning_pants_plugin.lockfile_resource" = [
+  "vcs_versioning_lockfile.json",
+  "vcs_versioning_lockfile.json.metadata",
 ]
-package-data.setuptools_scm_pants_plugin = [ "py.typed" ]
-# The `scm_version` target in `src/setuptools_scm_pants_plugin/BUILD` generates `version.py` from the git tags at
+package-data.vcs_versioning_pants_plugin = [ "py.typed" ]
+# The `scm_version` target in `src/vcs_versioning_pants_plugin/BUILD` generates `version.py` from the git tags at
 # build time; setuptools reads its literal statically.
-dynamic.version = { attr = "setuptools_scm_pants_plugin.version.__version__" }
+dynamic.version = { attr = "vcs_versioning_pants_plugin.version.__version__" }

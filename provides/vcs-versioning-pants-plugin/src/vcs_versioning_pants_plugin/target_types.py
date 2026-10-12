@@ -3,7 +3,7 @@ from pants.engine.target import COMMON_TARGET_FIELDS, OptionalSingleSourceField,
 from pants.util.strutil import help_text
 
 DEFAULT_TAG_REGEX = r"^(?:[\w-]+-)?(?P<version>[vV]?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$"
-"""setuptools-scm's default tag regex, as Pants' `vcs_version` target also uses it."""
+"""vcs-versioning's default tag regex, as Pants' `vcs_version` target also uses it."""
 
 
 class ScmVersionDummySourceField(OptionalSingleSourceField):
@@ -22,7 +22,7 @@ class ScmVersionTagPrefixField(StringField):
         """
         Literal prefix a git tag must start with to be considered for this target, e.g. `my-package-v`.
 
-        setuptools-scm then runs `git describe --match '<tag_prefix>*[0-9]*'` and strips the prefix before
+        vcs-versioning then runs `git describe --match '<tag_prefix>*[0-9]*'` and strips the prefix before
         applying `tag_regex`. This lets every package in a monorepo be tagged `<package>-vX.Y.Z` and
         versioned independently. Without it, the nearest tag of any package is used.
         """
@@ -50,24 +50,24 @@ class ScmVersionTagRegexField(StringField):
 
 
 class ScmVersionVersionSchemeField(StringField):
-    """setuptools-scm version scheme."""
+    """vcs-versioning version scheme."""
 
     alias = "version_scheme"
     help = help_text(
         """
-        The version scheme to configure setuptools-scm to use, e.g. `guess-next-dev` (the default) or
+        The version scheme to configure vcs-versioning to use, e.g. `guess-next-dev` (the default) or
         `no-guess-dev`. See https://setuptools-scm.readthedocs.io/en/latest/extending/#version-number-construction
         """
     )
 
 
 class ScmVersionLocalSchemeField(StringField):
-    """setuptools-scm local scheme."""
+    """vcs-versioning local scheme."""
 
     alias = "local_scheme"
     help = help_text(
         """
-        The local scheme to configure setuptools-scm to use, e.g. `node-and-date` (the default) or
+        The local scheme to configure vcs-versioning to use, e.g. `node-and-date` (the default) or
         `no-local-version`. See https://setuptools-scm.readthedocs.io/en/latest/extending/#version-number-construction
         """
     )
@@ -108,7 +108,7 @@ class ScmVersionPythonResolveField(PythonResolveField):
 
 
 class ScmVersionTarget(Target):
-    """Generates a version string from git tags with setuptools-scm."""
+    """Generates a version string from git tags with vcs-versioning."""
 
     alias = "scm_version"
     core_fields = (
@@ -124,12 +124,13 @@ class ScmVersionTarget(Target):
     )
     help = help_text(
         """
-        Generates a version string from git tags with setuptools-scm.
+        Generates a version string from git tags with vcs-versioning.
 
         A drop-in superset of Pants' `vcs_version` target that adds `tag_prefix`, so every package of a
         monorepo can be tagged and versioned on its own. Only the fields of this target configure
-        setuptools-scm; any `[tool.setuptools_scm]` table in the repo is ignored.
+        vcs-versioning; any `[tool.vcs-versioning]` table in the repo is ignored.
 
-        Requires setuptools-scm >= 10 (see the `[setuptools-scm-tool]` subsystem).
+        Requires vcs-versioning >= 2.5, the core library of setuptools-scm >= 10 (see the `[vcs-versioning]`
+        subsystem).
         """
     )

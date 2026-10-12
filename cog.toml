@@ -3,7 +3,7 @@ from_latest_tag = true
 ignore_merge_commits = false
 ignore_fixup_commits = false
 # Every plugin is versioned on its own: tags are `<plugin-name>-vX.Y.Z` and there is no repo-wide version.
-# The tags are the only place a version lives: wheels read theirs from git via setuptools-scm at build time.
+# The tags are the only place a version lives: wheels read theirs from git via vcs-versioning at build time.
 generate_mono_repository_global_tag = false
 branch_whitelist = ["main"]
 pre = "alpha.*"
@@ -18,10 +18,10 @@ scopes = [
   "pants-plugin-developer-utils",
   "pyproject-fmt-plugin",
   "rules",
-  "setuptools-scm-pants-plugin",
   "subsystem",
   "targets",
   "ty-pants-plugin",
+  "vcs-versioning-pants-plugin",
   "version",
 ]
 skip_ci = "[skip ci]"
@@ -66,8 +66,8 @@ path = "provides/pants-plugin-developer-utils"
 [monorepo.packages.pyproject-fmt-plugin]
 path = "provides/pyproject-fmt-plugin"
 
-[monorepo.packages.setuptools-scm-pants-plugin]
-path = "provides/setuptools-scm-pants-plugin"
-
 [monorepo.packages.ty-pants-plugin]
 path = "provides/ty-pants-plugin"
+
+[monorepo.packages.vcs-versioning-pants-plugin]
+path = "provides/vcs-versioning-pants-plugin"

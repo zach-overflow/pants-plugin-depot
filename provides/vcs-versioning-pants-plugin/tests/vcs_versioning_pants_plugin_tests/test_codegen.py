@@ -10,9 +10,9 @@ from pants.engine.target import GeneratedSources
 from pants.testutil.rule_runner import RuleRunner
 from pants.util.contextutil import environment_as
 
-from setuptools_scm_pants_plugin.codegen import GenerateScmVersionRequest, render_setuptools_scm_config
-from setuptools_scm_pants_plugin.target_types import DEFAULT_TAG_REGEX, ScmVersionTarget
-from setuptools_scm_pants_plugin_tests.conftest import GitRepo, generate, scm_version_build
+from vcs_versioning_pants_plugin.codegen import GenerateScmVersionRequest, render_vcs_versioning_config
+from vcs_versioning_pants_plugin.target_types import DEFAULT_TAG_REGEX, ScmVersionTarget
+from vcs_versioning_pants_plugin_tests.conftest import GitRepo, generate, scm_version_build
 
 # --------------------------------------------------------------------------------------
 # Synthetic config rendering (no engine)
@@ -25,22 +25,22 @@ def _target(**fields: str) -> ScmVersionTarget:
 
 
 def test_render_config_uses_the_tag_table_not_the_deprecated_tag_regex() -> None:
-    config = tomllib.loads(render_setuptools_scm_config(_target(tag_prefix="my-plugin-v")))
+    config = tomllib.loads(render_vcs_versioning_config(_target(tag_prefix="my-plugin-v")))
 
     # Round-tripping through a TOML parser proves the regex escapes (`\w`, `\d`, `\+`) survive rendering.
-    assert config == {"tool": {"setuptools_scm": {"tag": {"prefix": "my-plugin-v", "regex": DEFAULT_TAG_REGEX}}}}
+    assert config == {"tool": {"vcs-versioning": {"tag": {"prefix": "my-plugin-v", "regex": DEFAULT_TAG_REGEX}}}}
 
 
 def test_render_config_includes_schemes_only_when_set() -> None:
     config = tomllib.loads(
-        render_setuptools_scm_config(
+        render_vcs_versioning_config(
             _target(
                 tag_regex=r"^version_(?P<version>.*)$", version_scheme="no-guess-dev", local_scheme="no-local-version"
             )
         )
     )
 
-    assert config["tool"]["setuptools_scm"] == {
+    assert config["tool"]["vcs-versioning"] == {
         "version_scheme": "no-guess-dev",
         "local_scheme": "no-local-version",
         "tag": {"regex": r"^version_(?P<version>.*)$"},
@@ -48,7 +48,7 @@ def test_render_config_includes_schemes_only_when_set() -> None:
 
 
 # --------------------------------------------------------------------------------------
-# Running setuptools-scm against a git repository (network: builds the tool venv)
+# Running vcs-versioning against a git repository (network: builds the tool venv)
 # --------------------------------------------------------------------------------------
 
 

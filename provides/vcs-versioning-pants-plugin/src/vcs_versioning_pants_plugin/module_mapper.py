@@ -19,7 +19,7 @@ from pants.engine.target import AllTargets, Targets
 from pants.engine.unions import UnionRule
 from pants.util.logging import LogLevel
 
-from setuptools_scm_pants_plugin.target_types import ScmVersionGenerateToField
+from vcs_versioning_pants_plugin.target_types import ScmVersionGenerateToField
 
 if TYPE_CHECKING:
     from pants_plugin_developer_utils import CollectedRules

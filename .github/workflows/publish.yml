@@ -52,7 +52,7 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     steps:
-      # The tag sits on HEAD, so setuptools-scm resolves exactly `<version>` (no dev or local suffix). It
+      # The tag sits on HEAD, so vcs-versioning resolves exactly `<version>` (no dev or local suffix). It
       # needs the full history and every tag to run `git describe`.
       - name: Checkout release tag
         uses: actions/checkout@v4
@@ -71,7 +71,7 @@ jobs:
           cache-lmdb-store: 'true'
 
       # The plugin's directory under `provides/` carries the tag's plugin name. A missing wheel means
-      # setuptools-scm did not see the tag on HEAD (shallow or dirty checkout).
+      # vcs-versioning did not see the tag on HEAD (shallow or dirty checkout).
       - name: Build wheel
         env:
           PACKAGE: ${{ needs.setup.outputs.package }}

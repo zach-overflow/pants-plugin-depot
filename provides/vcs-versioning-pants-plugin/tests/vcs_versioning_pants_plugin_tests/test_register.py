@@ -2,7 +2,7 @@ from pants.backend.python import target_types_rules
 from pants.testutil.rule_runner import RuleRunner
 from pants.vcs import git
 
-from setuptools_scm_pants_plugin import register
+from vcs_versioning_pants_plugin import register
 
 
 def test_backend_registers_with_the_engine() -> None:

@@ -1,4 +1,4 @@
-"""Generates the version module of a `scm_version` target by running setuptools-scm against the git worktree."""
+"""Generates the version module of a `scm_version` target by running vcs-versioning against the git worktree."""
 
 import json
 from typing import TYPE_CHECKING, cast
@@ -18,8 +18,8 @@ from pants.util.logging import LogLevel
 from pants.util.strutil import softwrap
 from pants.vcs.git import GitWorktreeRequest, get_git_worktree
 
-from setuptools_scm_pants_plugin.subsystem import SetuptoolsScm
-from setuptools_scm_pants_plugin.target_types import (
+from vcs_versioning_pants_plugin.subsystem import VcsVersioning
+from vcs_versioning_pants_plugin.target_types import (
     ScmVersionDummySourceField,
     ScmVersionGenerateToField,
     ScmVersionLocalSchemeField,
@@ -52,20 +52,20 @@ def _toml_string(value: str) -> str:
     return json.dumps(value, ensure_ascii=False)
 
 
-def render_setuptools_scm_config(target: Target) -> str:
+def render_vcs_versioning_config(target: Target) -> str:
     """
-    Render the synthetic `pyproject.toml` handed to setuptools-scm.
+    Render the synthetic `pyproject.toml` handed to vcs-versioning.
 
-    Only the target's fields are honoured; any `[tool.setuptools_scm]` table in the repo is ignored. The file
-    lives in the sandbox so setuptools-scm cannot write a version file into the workspace.
+    Only the target's fields are honoured; any `[tool.vcs-versioning]` table in the repo is ignored. The file
+    lives in the sandbox so vcs-versioning cannot write a version file into the workspace.
     """
-    lines = ["[tool.setuptools_scm]"]
+    lines = ["[tool.vcs-versioning]"]
     if version_scheme := target[ScmVersionVersionSchemeField].value:
         lines.append(f"version_scheme = {_toml_string(version_scheme)}")
     if local_scheme := target[ScmVersionLocalSchemeField].value:
         lines.append(f"local_scheme = {_toml_string(local_scheme)}")
-    # setuptools-scm >= 10 deprecates the top-level `tag_regex` in favour of the `tag` table.
-    lines.extend(["", "[tool.setuptools_scm.tag]"])
+    # vcs-versioning 2 (setuptools-scm 10) deprecates the top-level `tag_regex` in favour of the `tag` table.
+    lines.extend(["", "[tool.vcs-versioning.tag]"])
     if tag_prefix := target[ScmVersionTagPrefixField].value:
         lines.append(f"prefix = {_toml_string(tag_prefix)}")
     if tag_regex := target[ScmVersionTagRegexField].value:
@@ -73,10 +73,10 @@ def render_setuptools_scm_config(target: Target) -> str:
     return "\n".join(lines) + "\n"
 
 
-@rule(desc="Generate a version module from git tags with setuptools-scm", level=LogLevel.DEBUG)
+@rule(desc="Generate a version module from git tags with vcs-versioning", level=LogLevel.DEBUG)
 async def generate_python_from_scm_version(
     request: GenerateScmVersionRequest,
-    setuptools_scm: SetuptoolsScm,
+    vcs_versioning: VcsVersioning,
     local_environment_name: ChosenLocalEnvironmentName,
 ) -> GeneratedSources:
     # A MaybeGitWorktree is uncacheable, so this rule runs every time its result is needed. The process below
@@ -95,30 +95,30 @@ async def generate_python_from_scm_version(
         )
 
     input_digest_get = create_digest(
-        CreateDigest([FileContent(SYNTHETIC_CONFIG_PATH, render_setuptools_scm_config(target).encode())])
+        CreateDigest([FileContent(SYNTHETIC_CONFIG_PATH, render_vcs_versioning_config(target).encode())])
     )
     # Pin the tool to the interpreters its lockfile was generated for (the bundled one covers CPython 3.14
     # only), instead of letting `[python].interpreter_constraints` pick one the lockfile cannot serve.
-    interpreter_constraints = await get_lockfile_interpreter_constraints(setuptools_scm)
-    setuptools_scm_pex_get = create_venv_pex(
+    interpreter_constraints = await get_lockfile_interpreter_constraints(vcs_versioning)
+    vcs_versioning_pex_get = create_venv_pex(
         **implicitly(
             {
-                setuptools_scm.to_pex_request(interpreter_constraints=interpreter_constraints): PexRequest,
+                vcs_versioning.to_pex_request(interpreter_constraints=interpreter_constraints): PexRequest,
                 local_environment_name.val: EnvironmentName,
             }
         )
     )
-    setuptools_scm_pex, input_digest = await concurrently(setuptools_scm_pex_get, input_digest_get)
+    vcs_versioning_pex, input_digest = await concurrently(vcs_versioning_pex_get, input_digest_get)
 
     argv = ["--root", str(maybe_git_worktree.git_worktree.worktree), "--config", SYNTHETIC_CONFIG_PATH]
     result = await execute_process(
         **implicitly(
             {
                 VenvPexProcess(
-                    setuptools_scm_pex,
+                    vcs_versioning_pex,
                     argv=argv,
                     input_digest=input_digest,
-                    description=f"Run setuptools-scm for {target.address.spec}",
+                    description=f"Run vcs-versioning for {target.address.spec}",
                     level=LogLevel.INFO,
                     cache_scope=ProcessCacheScope.PER_SESSION,
                 ): VenvPexProcess,
