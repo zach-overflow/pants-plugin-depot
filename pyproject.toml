@@ -132,6 +132,8 @@ lint.isort.known-first-party = [
   "tach_pants_plugin_tests",
   "ty_pants_plugin",
   "ty_pants_plugin_tests",
+  "typos_pants_plugin",
+  "typos_pants_plugin_tests",
   "vcs_versioning_pants_plugin",
   "vcs_versioning_pants_plugin_tests",
 ]

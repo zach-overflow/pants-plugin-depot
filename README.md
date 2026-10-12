@@ -38,6 +38,11 @@ project.
       <td>Type checks Python code with <a href="https://docs.astral.sh/ty/"><code>ty</code></a>.</td>
     </tr>
     <tr>
+      <td style="white-space: nowrap;"><a href="provides/typos-pants-plugin/README.md"><code>typos-pants-plugin</code></a></td>
+      <td><a href="https://pypi.org/project/typos-pants-plugin/"><img alt="PyPI Version" src="https://img.shields.io/pypi/v/typos-pants-plugin?style=plastic&color=blue"></a></td>
+      <td>Checks and fixes spelling in source code with <a href="https://github.com/crate-ci/typos"><code>typos</code></a>.</td>
+    </tr>
+    <tr>
       <td style="white-space: nowrap;"><a href="provides/vcs-versioning-pants-plugin/README.md"><code>vcs-versioning-pants-plugin</code></a></td>
       <td><a href="https://pypi.org/project/vcs-versioning-pants-plugin/"><img alt="PyPI Version" src="https://img.shields.io/pypi/v/vcs-versioning-pants-plugin?style=plastic&color=blue"></a></td>
       <td>Generates version modules from git tags with <a href="https://pypi.org/project/vcs-versioning/"><code>vcs-versioning</code></a> (the core of <code>setuptools-scm</code>), with per-package tag prefixes.</td>
