@@ -122,6 +122,8 @@ lint.flake8-tidy-imports.banned-api.tempfile.msg = """\
   """
 lint.flake8-tidy-imports.banned-api.threading.msg = "The threading module is not safe for Pants plugins."
 lint.isort.known-first-party = [
+  "actionlint_pants_plugin",
+  "actionlint_pants_plugin_tests",
   "maturin_pants_plugin",
   "maturin_pants_plugin_tests",
   "pants_plugin_developer_utils",

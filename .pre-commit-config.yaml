@@ -20,13 +20,3 @@ repos:
         verbose: true
         groups: [typechecks]
         priority: 3
-
-      - id: actionlint
-        name: actionlint
-        description: "Lint GitHub Actions workflow files (syntax, expressions, shellcheck on run blocks)."
-        entry: hooks/actionlint.sh
-        language: script
-        files: '^\.github/workflows/.*\.ya?ml$'
-        pass_filenames: true
-        groups: [linting]
-        priority: 3
