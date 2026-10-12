@@ -36,8 +36,8 @@ Test modules live in a `<root_module>_tests` package, not directly in `tests/`. 
 ## Common commands
 
 ```bash
-pants fmt fix ::                        # ruff, shfmt, taplo, BUILD file formatting
-pants lint ::                           # ruff, shellcheck, shfmt, taplo, yamllint
+pants fmt fix ::                        # ruff, shfmt, taplo, typos, BUILD file formatting
+pants lint ::                           # ruff, shellcheck, shfmt, taplo, typos, yamllint
 pants check ::                          # mypy
 pants test ::                           # pytest
 pants package ::                        # build every plugin's wheel -> dist/

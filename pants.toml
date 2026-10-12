@@ -12,12 +12,14 @@ backend_packages = [
   "pants.backend.shell.lint.shfmt",
   "pants.backend.tools.taplo",
   "pyproject_fmt_pants_plugin",
+  "typos_pants_plugin",
   "vcs_versioning_pants_plugin",
 ]
 pants_version = "2.33.1"
 # https://www.pantsbuild.org/stable/docs/writing-plugins/overview#in-repo-plugins
 pythonpath = [
   "%(buildroot)s/provides/pyproject-fmt-pants-plugin/src",
+  "%(buildroot)s/provides/typos-pants-plugin/src",
   "%(buildroot)s/provides/vcs-versioning-pants-plugin/src",
 ]
 build_patterns = ["BUILD", "BUILD.*"]
@@ -44,6 +46,21 @@ glob_pattern = [
   "!taplo.toml",
   # `pyproject-fmt` handles `pyproject.toml` files.
   "!**/pyproject.toml",
+]
+
+[typos]
+# The repo-wide `typos` config lives here rather than in a `_typos.toml` file. Excluded files are passed
+# explicitly by Pants, so the plugin adds `--force-exclude` for these globs to apply.
+args = [
+  "--exclude=*.json",
+  "--exclude=*.json.metadata",
+  "--exclude=*.lock",
+  "--exclude=*.toml",
+  # `.gitignore`, `.gitattributes`, ...; a `!` re-includes, so the `.github/` directory stays checked.
+  "--exclude=.git*",
+  "--exclude=!.github",
+  # Its tests feed `typos` deliberate misspellings.
+  "--exclude=provides/typos-pants-plugin/tests/",
 ]
 
 [cli.alias]
