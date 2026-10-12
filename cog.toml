@@ -8,6 +8,7 @@ generate_mono_repository_global_tag = false
 branch_whitelist = ["main"]
 pre = "alpha.*"
 scopes = [
+  "actionlint-pants-plugin",
   "builds",
   "ci",
   "deps",
@@ -58,6 +59,9 @@ repository = "pants-plugin-depot"
 authors = [{ username = "zach-overflow", signature = "Zach" }]
 
 [bump_profiles]
+
+[monorepo.packages.actionlint-pants-plugin]
+path = "provides/actionlint-pants-plugin"
 
 [monorepo.packages.maturin-pants-plugin]
 path = "provides/maturin-pants-plugin"

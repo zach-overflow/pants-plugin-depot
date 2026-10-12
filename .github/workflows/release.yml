@@ -88,11 +88,6 @@ jobs:
           # shallow clone has neither.
           fetch-depth: 0
 
-      - name: actionlint
-        # No Pants backend for actionlint, so the shared hook runs it directly (downloads a pinned binary).
-        run: |
-          bash hooks/actionlint.sh
-
       - name: setup-python
         uses: actions/setup-python@v7
         with:
@@ -106,13 +101,9 @@ jobs:
           named-caches-hash: ${{ hashFiles('3rdparty/**/*-lockfile.json') }}
           cache-lmdb-store: 'true'
 
-      - name: check-build-files
-        run: |
-          pants update-build-files --check ::
-
       - name: lint-check-test
         run: |
-          pants lint check test ::
+          pants update-build-files --check lint check test ::
 
       # Validation-only build (the Publish workflow rebuilds from each tag). The tags do not exist yet, so
       # these wheels carry dev versions (`X.Y.Z.devN+g<sha>`, counted from each plugin's previous tag).

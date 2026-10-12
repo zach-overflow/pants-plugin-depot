@@ -24,11 +24,6 @@ jobs:
           # shallow clone has neither.
           fetch-depth: 0
 
-      - name: Lint GitHub Actions workflows
-        # No Pants backend for actionlint, so the shared hook runs it directly (downloads a pinned binary).
-        run: |
-          bash hooks/actionlint.sh
-
       - name: Set up Python
         uses: actions/setup-python@v7
         with:

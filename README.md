@@ -16,6 +16,11 @@ project.
   </thead>
   <tbody>
     <tr>
+      <td style="white-space: nowrap;"><a href="provides/actionlint-pants-plugin/README.md"><code>actionlint-pants-plugin</code></a></td>
+      <td><a href="https://pypi.org/project/actionlint-pants-plugin/"><img alt="PyPI Version" src="https://img.shields.io/pypi/v/actionlint-pants-plugin?style=plastic&color=blue"></a></td>
+      <td>Lints GitHub Actions workflow files with <a href="https://github.com/rhysd/actionlint"><code>actionlint</code></a>.</td>
+    </tr>
+    <tr>
       <td style="white-space: nowrap;"><a href="provides/maturin-pants-plugin/README.md"><code>maturin-pants-plugin</code></a></td>
       <td><a href="https://pypi.org/project/maturin-pants-plugin/"><img alt="PyPI Version" src="https://img.shields.io/pypi/v/maturin-pants-plugin?style=plastic&color=blue"></a></td>
       <td>Build and publish Rust-backed Python wheels with <a href="https://www.maturin.rs/"><code>maturin</code></a>.</td>
