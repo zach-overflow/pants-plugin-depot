@@ -4,7 +4,7 @@ import os.path
 from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum, unique
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pants.core.util_rules import config_files
 from pants.core.util_rules.config_files import find_config_file
@@ -56,7 +56,7 @@ class TyposPartitionRequest:
 
 
 @rule
-async def partition_typos_inputs(request: TyposPartitionRequest, typos: Typos) -> Partitions:
+async def partition_typos_inputs(request: TyposPartitionRequest, typos: Typos) -> Partitions[str, Any]:
     """Selects the files matching `[typos].glob_pattern` as one partition, or none when nothing is to be run."""
     if typos.skip:
         return Partitions()

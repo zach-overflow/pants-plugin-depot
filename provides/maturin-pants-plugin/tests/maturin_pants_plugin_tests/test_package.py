@@ -42,8 +42,7 @@ def test_build_maturin_package() -> None:
     sources = Snapshot.create_for_testing([f"{CRATE_DIR}/Cargo.toml", f"{CRATE_DIR}/pyproject.toml"], [CRATE_DIR])
     output_digest = Snapshot.create_for_testing([f"{MATURIN_WHEELS_OUT_DIR}/{_WHEEL}"], [MATURIN_WHEELS_OUT_DIR]).digest
     wheels = Snapshot.create_for_testing([_WHEEL], [])
-    process_result = create_autospec(ProcessResult, instance=True)
-    process_result.output_digest = output_digest
+    process_result: ProcessResult = create_autospec(ProcessResult, instance=True, output_digest=output_digest)
     process_requests: list[MaturinProcessRequest] = []
     remove_prefixes: list[RemovePrefix] = []
 

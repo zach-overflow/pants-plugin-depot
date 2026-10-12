@@ -11,7 +11,8 @@ def _normalize(requirement: str) -> tuple[str, list[str]]:
     """Split a requirement into its name and sorted specifiers, so specifier order does not matter."""
     match = re.fullmatch(r"([A-Za-z0-9_.-]+)(.*)", requirement)
     assert match is not None, requirement
-    name, specifiers = match.groups()
+    name: str = match[1]
+    specifiers: str = match[2]
     return name, sorted(specifier.strip() for specifier in specifiers.split(","))
 
 

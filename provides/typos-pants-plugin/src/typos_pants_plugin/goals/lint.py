@@ -33,7 +33,7 @@ async def partition_typos_lint_inputs(request: TyposLintRequest.PartitionRequest
 
 
 @rule(desc="Check spelling with `typos`", level=LogLevel.DEBUG)
-async def run_typos_lint(request: TyposLintRequest.Batch) -> LintResult:
+async def run_typos_lint(request: TyposLintRequest.Batch[str, Any]) -> LintResult:
     snapshot = await digest_to_snapshot(**implicitly(PathGlobs(request.elements)))
     process = await setup_typos_process(
         TyposProcessRequest(snapshot=snapshot, files=snapshot.files, mode=TyposMode.LINT), **implicitly()

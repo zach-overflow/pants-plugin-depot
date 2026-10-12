@@ -65,7 +65,7 @@ class TyFieldSet(FieldSet):
         return tgt.get(SkipTyField).value
 
 
-class TyRequest(CheckRequest):
+class TyRequest(CheckRequest[TyFieldSet]):
     """`CheckRequest` for `ty` type checking."""
 
     field_set_type = TyFieldSet

@@ -22,8 +22,7 @@ lint.extend-select = [
   "PIE790",
   "PLW0603",
   "PT",
-  "PYI045",
-  "PYI055",
+  "PYI",
   "RUF006",
   "RUF008",
   "RUF009",
@@ -155,16 +154,26 @@ lint.isort.split-on-trailing-comma = false
 lint.pycodestyle.ignore-overlong-task-comments = true
 lint.pydocstyle.convention = "google"
 lint.pydocstyle.ignore-var-parameters = true
+# Part of ty's strict recipe, together with `ANN` and `PYI`.
+lint.preview = true
 
 # `ty` runs through the in-repo `ty-pants-plugin`; Pants supplies the search paths and Python version.
-# Missing annotations are Ruff's job (`ANN`): `ty` has no rule for them.
+# Missing annotations are Ruff's job (`ANN`): `ty` has no rule for them. The rules mirror mypy's strict
+# flags where `ty` has an equivalent, following ty's strict recipe:
+# https://docs.astral.sh/ty/coming-from-mypy-or-pyright/#stricter-checking-with-ty
 [tool.ty]
 # mypy `disallow_untyped_decorators`
 rules.dynamic-function-decorator-return = "error"
+# mypy `disallow_any_generics`
+rules.missing-type-argument = "error"
+# No mypy strict flag; part of ty's strict recipe.
+rules.possibly-unresolved-reference = "warn"
 # mypy `warn_redundant_casts`
 rules.redundant-cast = "error"
 # mypy `strict_equality`
 rules.redundant-condition = "error"
+# mypy `warn_return_any`
+rules.unsound-return-statement = "error"
 # mypy `warn_unused_ignores`
 rules.unused-ignore-comment = "error"
 rules.unused-type-ignore-comment = "error"

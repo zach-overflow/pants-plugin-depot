@@ -3,7 +3,7 @@
 import os
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pants.backend.python.util_rules.interpreter_constraints import InterpreterConstraints
 from pants.backend.python.util_rules.pex import VenvPex, VenvPexProcess, create_venv_pex, setup_venv_pex_process
@@ -40,7 +40,7 @@ class PyprojectFmtResult:
     """The formatted `pyproject.toml` files."""
 
 
-def common_partition_pyproject_toml_inputs(skip: bool, files: Iterable[str]) -> Partitions:
+def common_partition_pyproject_toml_inputs(skip: bool, files: Iterable[str]) -> Partitions[str, Any]:
     """Helper for partitioning the subject pyproject.toml files, regardless of goal being invoked."""
     files = tuple(files)
     if skip or not files:
