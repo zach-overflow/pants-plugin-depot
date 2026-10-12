@@ -114,11 +114,16 @@ part. A commit that touches two plugins bumps both. A commit that touches only r
 
 1. Land conventional commits on `main`. For each plugin, the commits since its latest tag that touch its
    directory are its release: they determine the version and become the release notes.
-2. Run the *Release* workflow from `main` (Actions -> Release -> Run workflow). It:
-   - checks the pending commits are conventional and that at least one plugin warrants a bump,
-   - runs `pants lint check test ::` and builds the wheels,
+2. Run the *Release* workflow from `main` (Actions -> Release -> Run workflow). Leave the `package`
+   input empty to release every plugin with pending changes, or set it to one plugin name (a
+   `[monorepo.packages]` key in `cog.toml`) to release that plugin alone. The workflow:
+   - checks the pending commits are conventional and that at least one plugin (or the given `package`)
+     warrants a bump,
+   - runs `pants lint check test ::` and builds the wheels (always for the whole repo),
    - runs `cog bump --auto`, which updates the changelog of every plugin with pending changes in one
-     `chore(version): bump packages` commit and tags it once per bumped plugin,
+     `chore(version): bump packages` commit and tags it once per bumped plugin. With `package` it runs
+     `cog bump --auto --package <plugin-name>` instead: one `chore(version): <plugin-name>-vX.Y.Z` commit
+     and one tag. The other plugins' pending commits stay pending for a later run,
    - pushes that commit and the tags to `main`,
    - creates one **draft** GitHub release per tag from the plugin's changelog,
    - dispatches the *Publish* workflow once per tag.
@@ -141,6 +146,9 @@ part. A commit that touches two plugins bumps both. A commit that touches only r
 4. Add the plugin's modules to `known-first-party` in the root `pyproject.toml`.
 5. Add the plugin to the table in the root `README.md`.
 6. Register a PyPI Trusted Publisher for the new project (see below).
+7. Cut the plugin's first release with the *Release* workflow's `package` input set to `<plugin-name>`.
+   PyPI allows one *pending* Trusted Publisher per account at a time, so two plugins that are not on PyPI
+   yet cannot be released in the same run.
 
 ## Required repository configuration
 
@@ -166,6 +174,12 @@ part. A commit that touches two plugins bumps both. A commit that touches only r
 - **`check-commits` fails with "No plugin has a commit that warrants a release"**: only non-bumping
   types (`chore`, `docs`, `ci`, ...) landed, or the bumping commits touched no plugin directory. Land at
   least one `fix` or `feat` that changes a plugin.
+- **`check-commits` fails with "'<plugin-name>' is not a package in cog.toml"**: the `package` input is not
+  a `[monorepo.packages]` key. The error lists the valid names.
+- **`check-commits` fails with "'<plugin-name>' has no commit that warrants a release"**: the `package`
+  input names a plugin whose commits since its latest tag are all non-bumping types.
+- **`cog-bump` fails with "No conventional commit found to bump current version"**: the `package` input
+  names a plugin whose latest tag already sits on `main`'s head, so there is nothing to release.
 - **`approve-and-tag` fails with "moved past the validated commit"**: a PR merged while the release was
   running. Re-run the Release workflow.
 - **`approve-and-tag` fails on `git push`**: `RELEASE_TOKEN` is missing, expired, or not an admin's token.

@@ -1,5 +1,5 @@
 name: Release
-run-name: Release from ${{ github.ref_name }} by ${{ github.actor }}
+run-name: Release ${{ inputs.package || 'all plugins' }} from ${{ github.ref_name }} by ${{ github.actor }}
 
 # One-click release flow (no draft release needed — versioning is driven by conventional commits):
 #   1. Run this workflow (Actions -> Release -> Run workflow, from the default branch). It checks the
@@ -10,6 +10,9 @@ run-name: Release from ${{ github.ref_name }} by ${{ github.actor }}
 #      `<plugin-name>-vX.Y.Z`. The changelogs land in ONE `chore(version): bump packages` commit, which is
 #      pushed to the default branch with the tags. Nothing in the tree carries a version: the wheels read
 #      theirs from the tags via vcs-versioning at build time.
+#      The optional `package` input restricts this step to ONE plugin (`cog bump --auto --package`); the
+#      other plugins' pending commits stay pending for a later run. PyPI allows one pending Trusted
+#      Publisher at a time, so plugins that are not on PyPI yet MUST get their first release one per run.
 #   3. Per tag, a DRAFT GitHub release is created with that plugin's changelog section as its body, and
 #      the Publish workflow is dispatched (see the `publish` job below for why it is dispatched rather than
 #      `push`-triggered or called as a reusable workflow). Publish attaches the wheel to the draft and only
@@ -17,11 +20,19 @@ run-name: Release from ${{ github.ref_name }} by ${{ github.actor }}
 #      alter a release after the fact.
 on:
   workflow_dispatch:
+    inputs:
+      package:
+        description: >-
+          Plugin to release (a `[monorepo.packages]` name from cog.toml). Leave empty to release every
+          plugin with pending changes.
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: read
 
-# Never validate/tag two releases concurrently.
+# Never validate/tag two releases concurrently, scoped or not: every run pushes to the default branch.
 concurrency:
   group: release
   cancel-in-progress: false
@@ -34,10 +45,10 @@ jobs:
   # cocogitto-action@v4.2.0 pins cog 7.0.0 (the floating v4 tag lags behind and ships an older cog that
   # may not parse this repo's cog.toml).
   check-commits:
-    name: Check conventional commits
+    name: check-commits
     runs-on: ubuntu-latest
     steps:
-      - name: Require the default branch
+      - name: require-default-branch
         env:
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
@@ -45,48 +56,73 @@ jobs:
             echo "::error::Releases must be run from '${DEFAULT_BRANCH}' (got '${GITHUB_REF_NAME}')."
             exit 1
           fi
-      - name: Checkout code
+      - name: checkout
         uses: actions/checkout@v4
         with:
           # cog needs the full history and tags to find each plugin's latest release tag.
           fetch-depth: 0
-      - name: Check commits since the latest tag are conventional
+      # `cog bump --package` only accepts the `[monorepo.packages.*]` keys; fail early with the valid list.
+      - name: validate-package-input
+        env:
+          PACKAGE: ${{ inputs.package }}
+        run: |
+          if [[ -z "${PACKAGE}" ]]; then
+            echo "::notice::No package given; releasing every plugin with pending changes."
+            exit 0
+          fi
+          if ! grep -Fxq "[monorepo.packages.${PACKAGE}]" cog.toml; then
+            packages="$(sed -nE 's/^\[monorepo\.packages\.([^]]+)\]$/\1/p' cog.toml)"
+            echo "::error::'${PACKAGE}' is not a package in cog.toml. Valid packages: ${packages//$'\n'/ }"
+            exit 1
+          fi
+          echo "::notice::Releasing only '${PACKAGE}'."
+      - name: cog-check
         uses: cocogitto/cocogitto-action@v4.2.0
         with:
           command: check
       # cog exits 0 and prints a sentence instead of tags when no plugin warrants a bump.
-      - name: Compute the pending release tags (dry run)
+      - name: compute-pending-release-tags
+        env:
+          PACKAGE: ${{ inputs.package }}
         run: |
-          pending="$(cog bump --auto --dry-run)"
+          args=(bump --auto --dry-run)
+          if [[ -n "${PACKAGE}" ]]; then
+            args+=(--package "${PACKAGE}")
+          fi
+          pending="$(cog "${args[@]}")"
           if ! grep -Eq '^[a-z0-9][a-z0-9-]*-v[0-9]+\.[0-9]+\.[0-9]+$' <<< "${pending}"; then
             echo "::error::No plugin has a commit that warrants a release (cog printed '${pending}')."
+            exit 1
+          fi
+          if [[ -n "${PACKAGE}" && ! "${pending}" =~ ^${PACKAGE}-v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::'${PACKAGE}' has no commit that warrants a release (cog printed '${pending}')."
             exit 1
           fi
           echo "::notice::Validating ${GITHUB_SHA} for release: ${pending//$'\n'/ }"
 
   validate:
-    name: Pants validate + build wheels
+    name: validate
     needs: check-commits
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: checkout
         uses: actions/checkout@v4
         with:
           # vcs-versioning derives each wheel's version from the plugin's tags and the distance to HEAD; a
           # shallow clone has neither.
           fetch-depth: 0
 
-      - name: Lint GitHub Actions workflows
+      - name: actionlint
         # No Pants backend for actionlint, so the shared hook runs it directly (downloads a pinned binary).
         run: |
           bash hooks/actionlint.sh
 
-      - name: Set up Python
+      - name: setup-python
         uses: actions/setup-python@v7
         with:
           python-version: '3.14'
 
-      - name: Initialize Pants
+      - name: init-pants
         uses: pantsbuild/actions/init-pants@v11
         with:
           # Bump to invalidate every Pants cache; re-fetch named caches when dependencies change.
@@ -94,22 +130,23 @@ jobs:
           named-caches-hash: ${{ hashFiles('3rdparty/**/*-lockfile.json') }}
           cache-lmdb-store: 'true'
 
-      - name: Check BUILD files are up to date
+      - name: check-build-files
         run: |
           pants update-build-files --check ::
 
-      - name: Static checks and tests
+      - name: lint-check-test
         run: |
           pants lint check test ::
 
       # Validation-only build (the Publish workflow rebuilds from each tag). The tags do not exist yet, so
       # these wheels carry dev versions (`X.Y.Z.devN+g<sha>`, counted from each plugin's previous tag).
-      - name: Build wheels
+      # The whole repo is validated even when `package` scopes the release to one plugin.
+      - name: build-wheels
         run: |
           pants package ::
           ls -l dist/*.whl
 
-      - name: Upload Pants log
+      - name: upload-pants-log
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -120,7 +157,7 @@ jobs:
   # that commit once per bumped plugin. The GitHub releases are created as drafts: releases are immutable
   # once published, so Publish's `publish-release` attaches the wheel first, then publishes it.
   approve-and-tag:
-    name: Approve, bump, tag, and draft releases
+    name: approve-and-tag
     needs: [check-commits, validate]
     runs-on: ubuntu-latest
     environment: release
@@ -131,7 +168,7 @@ jobs:
     steps:
       # A rejected token makes checkout fail with the misleading "could not read Username for
       # 'https://github.com'", so check the token first and say what is wrong with it.
-      - name: Check RELEASE_TOKEN
+      - name: check-release-token
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: |
@@ -154,7 +191,7 @@ jobs:
             exit 1
           fi
           echo "::notice::RELEASE_TOKEN authenticates as '${login}' (admin)."
-      - name: Checkout code
+      - name: checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -162,32 +199,43 @@ jobs:
           # RELEASE_TOKEN belongs to a repo admin (admins are exempt), and checkout persists it for the
           # `git push` below.
           token: ${{ secrets.RELEASE_TOKEN }}
-      - name: Require the validated commit
+      - name: require-validated-commit
         run: |
           if [[ "$(git rev-parse HEAD)" != "${GITHUB_SHA}" ]]; then
             echo "::error::'${GITHUB_REF_NAME}' moved past the validated commit ${GITHUB_SHA}. Re-run the release."
             exit 1
           fi
-      - name: Bump versions, update changelogs, and tag
+      # With `package`, cog bumps that plugin alone: one `chore(version): <plugin-name>-vX.Y.Z` commit, one tag.
+      - name: cog-bump
         uses: cocogitto/cocogitto-action@v4.2.0
         with:
           command: bump
-          args: --auto
+          args: ${{ inputs.package != '' && format('--auto --package {0}', inputs.package) || '--auto' }}
       # Atomic: the branch and every tag move together or not at all.
-      - name: Push the bump commit and the release tags
+      - name: push-bump-and-tags
         id: push
+        env:
+          PACKAGE: ${{ inputs.package }}
         run: |
           mapfile -t tags < <(git tag --points-at HEAD)
           if [[ "$(git rev-parse HEAD)" == "${GITHUB_SHA}" || "${#tags[@]}" -eq 0 ]]; then
             echo "::error::cog created no bump commit or no tag on top of ${GITHUB_SHA}."
             exit 1
           fi
+          if [[ -n "${PACKAGE}" ]]; then
+            for tag in "${tags[@]}"; do
+              if [[ "${tag}" != "${PACKAGE}-v"* ]]; then
+                echo "::error::Release is scoped to '${PACKAGE}' but HEAD carries the tag '${tag}'. Nothing was pushed."
+                exit 1
+              fi
+            done
+          fi
           git push --atomic origin "HEAD:${GITHUB_REF_NAME}" "${tags[@]}"
           echo "tags=${tags[*]}" >> "$GITHUB_OUTPUT"
       # A tag is `<plugin-name>-vX.Y.Z`, and the plugin's directory under `provides/` carries the same name.
       # Its notes are the newest section of `provides/<plugin-name>/CHANGELOG.md`: from the tag's heading to
       # the next `- - -`.
-      - name: Draft the GitHub releases
+      - name: draft-github-releases
         env:
           GH_TOKEN: ${{ github.token }}
           TAGS: ${{ steps.push.outputs.tags }}
@@ -218,13 +266,13 @@ jobs:
   # rejects reusable workflows, and each plugin's registered publisher is pinned to `publish.yml`. One run
   # is dispatched per tag, after its draft release exists.
   publish:
-    name: Dispatch publish workflows
+    name: publish
     needs: approve-and-tag
     runs-on: ubuntu-latest
     permissions:
       actions: write
     steps:
-      - name: Trigger publish.yml for each release tag
+      - name: dispatch-publish
         env:
           GH_TOKEN: ${{ github.token }}
           TAGS: ${{ needs.approve-and-tag.outputs.tags }}
