@@ -90,13 +90,17 @@ class Ty(TemplatedExternalTool):
         `ty` discovers its config by walking up from the current directory, and Pants runs it from the build
         root of the sandbox, so only a config in the build root takes effect. `ty.toml` takes precedence over
         `pyproject.toml` when both exist. See https://docs.astral.sh/ty/configuration/#configuration-files.
+
+        `check_content` is a substring test, and `[tool.ty.rules]` alone is valid `ty` config, so the needle
+        MUST be the open `[tool.ty` prefix. It also matches e.g. `[tool.typos]`, which only ships a
+        `pyproject.toml` that `ty` then ignores.
         """
         return ConfigFilesRequest(
             specified=self.config,
             specified_option_name=f"[{self.options_scope}].config",
             discovery=self.config_discovery,
             check_existence=["ty.toml"],
-            check_content={"pyproject.toml": b"[tool.ty]"},
+            check_content={"pyproject.toml": b"[tool.ty"},
         )
 
     def generate_exe(self, plat: Platform) -> str:
