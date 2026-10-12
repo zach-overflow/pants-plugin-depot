@@ -3,6 +3,7 @@ from_latest_tag = true
 ignore_merge_commits = false
 ignore_fixup_commits = false
 # Every plugin is versioned on its own: tags are `<plugin-name>-vX.Y.Z` and there is no repo-wide version.
+# The tags are the only place a version lives: wheels read theirs from git via vcs-versioning at build time.
 generate_mono_repository_global_tag = false
 branch_whitelist = ["main"]
 pre = "alpha.*"
@@ -15,22 +16,20 @@ scopes = [
   "hooks",
   "maturin-pants-plugin",
   "pants-plugin-developer-utils",
+  "pyproject-fmt-pants-plugin",
   "pyproject-fmt-plugin",
   "rules",
   "subsystem",
   "targets",
   "ty-pants-plugin",
+  "vcs-versioning-pants-plugin",
   "version",
 ]
 skip_ci = "[skip ci]"
 skip_untracked = false
 pre_bump_hooks = []
 post_bump_hooks = []
-# Package hooks run inside the plugin's directory. The `grep` fails the bump if `sed` matched nothing.
-pre_package_bump_hooks = [
-  '''sed -i.bak -E 's/^version = "[^"]*"$/version = "{{version}}"/' pyproject.toml && rm pyproject.toml.bak''',
-  '''grep -qx 'version = "{{version}}"' pyproject.toml''',
-]
+pre_package_bump_hooks = []
 post_package_bump_hooks = []
 
 [git_hooks]
@@ -65,8 +64,11 @@ path = "provides/maturin-pants-plugin"
 [monorepo.packages.pants-plugin-developer-utils]
 path = "provides/pants-plugin-developer-utils"
 
-[monorepo.packages.pyproject-fmt-plugin]
-path = "provides/pyproject-fmt-plugin"
+[monorepo.packages.pyproject-fmt-pants-plugin]
+path = "provides/pyproject-fmt-pants-plugin"
 
 [monorepo.packages.ty-pants-plugin]
 path = "provides/ty-pants-plugin"
+
+[monorepo.packages.vcs-versioning-pants-plugin]
+path = "provides/vcs-versioning-pants-plugin"

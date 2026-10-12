@@ -1,0 +1,79 @@
+{
+  "allow_builds": true,
+  "allow_prereleases": false,
+  "allow_wheels": true,
+  "build_isolation": true,
+  "constraints": [],
+  "elide_unused_requires_dist": false,
+  "excluded": [],
+  "locked_resolves": [
+    {
+      "locked_requirements": [
+        {
+          "artifacts": [
+            {
+              "algorithm": "sha256",
+              "hash": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c",
+              "url": "https://files.pythonhosted.org/packages/63/34/ba1c580383c9eada3711951fef0795c80b829a078d72188184bcab9dd527/packaging-26.3-py3-none-any.whl"
+            },
+            {
+              "algorithm": "sha256",
+              "hash": "94edc256424af38762eb31306eed28beb9f0efc50a8837492c9d6fd6004aed79",
+              "url": "https://files.pythonhosted.org/packages/7d/fa/3944b40b07da9ce895c0e6303a5ab7d53da063554f534556b134a54d6093/packaging-26.3.tar.gz"
+            }
+          ],
+          "project_name": "packaging",
+          "requires_dists": [],
+          "requires_python": ">=3.9",
+          "version": "26.3"
+        },
+        {
+          "artifacts": [
+            {
+              "algorithm": "sha256",
+              "hash": "f8bebd1302ebc12e67ceb30fc7dd698ec969414b6fa43b30c3f14ac9b1e72c41",
+              "url": "https://files.pythonhosted.org/packages/73/1d/ad4064bf12f4503bf61e65d74c93c523672776d25ee0a06aaf42ae09ef3f/vcs_versioning-2.6.0-py3-none-any.whl"
+            },
+            {
+              "algorithm": "sha256",
+              "hash": "22e9159288e2d8bca2fa6f6c31c34c9c66aec157f60e9e526f5d160d2516d60f",
+              "url": "https://files.pythonhosted.org/packages/ad/e7/2a691db7d076b75d099fdba1a14cd966931f2aeb591e77f6d22f15097326/vcs_versioning-2.6.0.tar.gz"
+            }
+          ],
+          "project_name": "vcs-versioning",
+          "requires_dists": [
+            "packaging>=26.2",
+            "tomli>=1; python_version < \"3.11\"",
+            "typing-extensions>=4.1; python_version < \"3.11\""
+          ],
+          "requires_python": ">=3.8",
+          "version": "2.6.0"
+        }
+      ],
+      "marker": null,
+      "platform_tag": null
+    }
+  ],
+  "only_builds": [],
+  "only_wheels": [],
+  "overridden": [],
+  "path_mappings": {},
+  "pex_version": "2.97.1",
+  "pip_version": "26.1.2",
+  "prefer_older_binary": false,
+  "requirements": [
+    "vcs-versioning<3,>=2.5"
+  ],
+  "requires_python": [
+    "CPython<3.15,>=3.14"
+  ],
+  "resolver_version": "pip-2020-resolver",
+  "style": "universal",
+  "target_systems": [
+    "linux",
+    "mac"
+  ],
+  "transitive": true,
+  "use_pep517": null,
+  "use_system_time": false
+}

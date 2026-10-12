@@ -12,10 +12,14 @@ backend_packages = [
   "pants.backend.shell.lint.shfmt",
   "pants.backend.tools.taplo",
   "pyproject_fmt_pants_plugin",
+  "vcs_versioning_pants_plugin",
 ]
 pants_version = "2.33.1"
 # https://www.pantsbuild.org/stable/docs/writing-plugins/overview#in-repo-plugins
-pythonpath = ["%(buildroot)s/provides/pyproject-fmt-plugin/src"]
+pythonpath = [
+  "%(buildroot)s/provides/pyproject-fmt-pants-plugin/src",
+  "%(buildroot)s/provides/vcs-versioning-pants-plugin/src",
+]
 build_patterns = ["BUILD", "BUILD.*"]
 colors = true
 pants_ignore = [".*/", "/dist/", "__pycache__", "!.github/"]
@@ -62,6 +66,7 @@ separate_lockfile_metadata_file = true
 [python.resolves]
 maturin = "provides/maturin-pants-plugin/src/maturin_pants_plugin/lockfile_resource/maturin_lockfile.json"
 "plugin-resolve" = "3rdparty/python/plugin-lockfile.json"
+"vcs-versioning" = "provides/vcs-versioning-pants-plugin/src/vcs_versioning_pants_plugin/lockfile_resource/vcs_versioning_lockfile.json"
 
 [python-infer]
 # Plugins share one resolve but each declares its own requirements. When two plugins declare the same

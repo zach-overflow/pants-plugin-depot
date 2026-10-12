@@ -4,8 +4,6 @@ requires = [ "setuptools>=84.0.0" ]
 
 [project]
 name = "pants-plugin-developer-utils"
-# Rewritten by `cog bump` (see the pre-bump hook in the root `cog.toml`). Do not edit by hand.
-version = "0.1.0"
 description = "Collection of utilities for writing and testing pantsbuild plugins."
 readme = "README.md"
 keywords = [
@@ -34,6 +32,7 @@ classifiers = [
   "Topic :: Software Development :: Testing",
   "Typing :: Typed",
 ]
+dynamic = [ "version" ]
 # `pantsbuild.pants` is deliberately absent: Pants supplies itself at plugin load time and is not on PyPI.
 dependencies = []
 # `pantsbuild.pants.testutil` 2.33 requires `pytest<9`. The extra also needs `pantsbuild.pants.testutil`
@@ -50,3 +49,6 @@ entry-points.pytest11.pants_plugin_developer_utils = "pants_plugin_developer_uti
 packages.find.where = [ "src" ]
 packages.find.include = [ "pants_plugin_developer_utils*" ]
 package-data.pants_plugin_developer_utils = [ "py.typed" ]
+# The `scm_version` target in `src/pants_plugin_developer_utils/BUILD` generates `version.py` from the git tags at build time;
+# setuptools reads its literal statically.
+dynamic.version = { attr = "pants_plugin_developer_utils.version.__version__" }

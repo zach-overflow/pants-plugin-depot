@@ -4,8 +4,6 @@ requires = [ "setuptools>=84.0.0" ]
 
 [project]
 name = "ty-pants-plugin"
-# Rewritten by `cog bump` (see the pre-bump hook in the root `cog.toml`). Do not edit by hand.
-version = "0.0.0"
 description = "A Pantsbuild plugin for type checking Python code with ty."
 readme = "README.md"
 keywords = [
@@ -31,6 +29,7 @@ classifiers = [
   "Topic :: Software Development :: Quality Assurance",
   "Typing :: Typed",
 ]
+dynamic = [ "version" ]
 # `pantsbuild.pants` is deliberately absent: Pants supplies itself at plugin load time and is not on PyPI.
 dependencies = [ "pants-plugin-developer-utils>=0.1.0" ]
 urls."Bug Tracker" = "https://github.com/zach-overflow/pants-plugin-depot/issues"
@@ -41,3 +40,6 @@ urls.Repository = "https://github.com/zach-overflow/pants-plugin-depot"
 packages.find.where = [ "src" ]
 packages.find.include = [ "ty_pants_plugin*" ]
 package-data.ty_pants_plugin = [ "py.typed" ]
+# The `scm_version` target in `src/ty_pants_plugin/BUILD` generates `version.py` from the git tags at build time;
+# setuptools reads its literal statically.
+dynamic.version = { attr = "ty_pants_plugin.version.__version__" }
