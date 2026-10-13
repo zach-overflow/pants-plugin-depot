@@ -7,7 +7,7 @@ from pants.core.goals.resolves import ExportableTool
 from pants.core.util_rules.config_files import ConfigFilesRequest
 from pants.engine.rules import collect_rules
 from pants.engine.unions import UnionRule
-from pants.option.option_types import BoolOption, FileOption, SkipOption
+from pants.option.option_types import ArgsListOption, BoolOption, FileOption, SkipOption
 from pants.util.strutil import softwrap
 
 if TYPE_CHECKING:
@@ -24,6 +24,18 @@ class PyprojectFmt(PythonToolBase):
 
     skip = SkipOption("fmt", "lint")
 
+    args = ArgsListOption(
+        example="--column-width 120 --keep-full-version",
+        extra_help=softwrap(
+            """
+            These arguments establish defaults: a shared `pyproject-fmt.toml` overrides them, and the
+            `[tool.pyproject-fmt]` table of a given `pyproject.toml` file has final precedence. Use them in place
+            of a `pyproject-fmt.toml` file to keep the repo-wide settings in `pants.toml`.
+
+            See https://pyproject-fmt.readthedocs.io/en/latest/configuration.html#command-line-interface
+            """
+        ),
+    )
     config = FileOption(
         default=None,
         advanced=True,

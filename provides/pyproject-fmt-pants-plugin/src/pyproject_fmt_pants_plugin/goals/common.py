@@ -63,6 +63,20 @@ async def create_pyproject_fmt_venv_pex(pyproject_fmt: PyprojectFmt) -> VenvPex:
     )
 
 
+def get_pyproject_fmt_argv(extra_args: Iterable[str], shared_config_filepath: str | None) -> tuple[str, ...]:
+    """
+    Builds the arguments shared by every `pyproject-fmt` process of a run, without the input file.
+
+    `pyproject-fmt` treats CLI values as defaults, so `--config` and the per-file `[tool.pyproject-fmt]` table
+    override `extra_args` regardless of argument order.
+    """
+    argv: list[str] = []
+    if shared_config_filepath:
+        argv.extend(["--config", shared_config_filepath])
+    argv.extend(extra_args)
+    return tuple(argv)
+
+
 @rule(desc="Calls the underlying tool in a separate process with any subsystem settings.", level=LogLevel.DEBUG)
 async def run_pyproject_fmt_process(request: RunPyprojectFmtRequest, pyproject_fmt: PyprojectFmt) -> PyprojectFmtResult:
     (config_files, ppf_pex) = await concurrently(
@@ -70,14 +84,12 @@ async def run_pyproject_fmt_process(request: RunPyprojectFmtRequest, pyproject_f
     )
     input_digest = await merge_digests(MergeDigests([request.snapshot.digest, config_files.snapshot.digest]))
 
-    args: list[str] = []
     # `--config` only accepts a standalone `pyproject-fmt.toml`. Passing a `pyproject.toml` fails on its
     # `[project]` table; `pyproject-fmt` reads `[tool.pyproject-fmt]` tables from each input file itself.
     shared_config = pyproject_fmt.config or next(
         (path for path in config_files.snapshot.files if os.path.basename(path) == "pyproject-fmt.toml"), None
     )
-    if shared_config:
-        args.extend(["--config", shared_config])
+    args = get_pyproject_fmt_argv(extra_args=pyproject_fmt.args, shared_config_filepath=shared_config)
 
     # `pyproject-fmt` stops after the first input it changes (`any()` over a generator), so run one process per file.
     processes = await concurrently(

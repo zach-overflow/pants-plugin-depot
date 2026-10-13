@@ -11,6 +11,7 @@ from pants_plugin_developer_utils.testing_utils import RuleRunnerFactory
 from pyproject_fmt_pants_plugin.goals.common import (
     common_partition_pyproject_toml_inputs,
     create_pyproject_fmt_venv_pex,
+    get_pyproject_fmt_argv,
 )
 from pyproject_fmt_pants_plugin.subsystem import PyprojectFmt
 
@@ -30,6 +31,25 @@ def test_common_partition_pyproject_toml_inputs(
     actual = common_partition_pyproject_toml_inputs(skip=skip, files=files)
     # `Partitions` are not comparable: each single partition holds a distinct `_EmptyMetadata` instance.
     assert [partition.elements for partition in actual] == expected
+
+
+@pytest.mark.parametrize(
+    ("extra_args", "shared_config_filepath", "expected"),
+    [
+        ((), None, ()),
+        ((), "pyproject-fmt.toml", ("--config", "pyproject-fmt.toml")),
+        (("--column-width=60", "--indent=4"), None, ("--column-width=60", "--indent=4")),
+        (
+            ("--column-width=60",),
+            "conf/pyproject-fmt.toml",
+            ("--config", "conf/pyproject-fmt.toml", "--column-width=60"),
+        ),
+    ],
+)
+def test_get_pyproject_fmt_argv(
+    extra_args: tuple[str, ...], shared_config_filepath: str | None, expected: tuple[str, ...]
+) -> None:
+    assert get_pyproject_fmt_argv(extra_args=extra_args, shared_config_filepath=shared_config_filepath) == expected
 
 
 @pytest.fixture(scope="function")
