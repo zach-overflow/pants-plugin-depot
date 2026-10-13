@@ -38,12 +38,12 @@ if TYPE_CHECKING:
     from pants_plugin_developer_utils import CollectedRules
 
 
-class MaturinPublishRequest(PublishRequest):
+class MaturinPublishRequest(PublishRequest["MaturinPublishFieldSet"]):
     """`PublishRequest` carrying the wheels `pants package` built for a `maturin_wheel` target."""
 
 
 @dataclass(frozen=True)
-class MaturinPublishFieldSet(PublishFieldSet, MaturinFieldSet):
+class MaturinPublishFieldSet(PublishFieldSet[MaturinPublishRequest], MaturinFieldSet):
     """`PublishFieldSet` subtype for the `maturin` pants plugin."""
 
     publish_request_type = MaturinPublishRequest

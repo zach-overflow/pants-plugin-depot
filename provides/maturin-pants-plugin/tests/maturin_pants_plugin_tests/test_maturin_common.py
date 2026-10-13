@@ -148,7 +148,7 @@ def test_get_maturin_sources_requires_pyproject_beside_cargo(
 
 def test_create_maturin_venv_pex(maturin_rule_runner: RuleRunner) -> None:
     maturin = maturin_rule_runner.request(Maturin, [])
-    expected = create_autospec(VenvPex, instance=True)
+    expected: VenvPex = create_autospec(VenvPex, instance=True)
     pex_requests: list[PexRequest] = []
 
     def mock_create_venv_pex(pex_request: PexRequest) -> VenvPex:

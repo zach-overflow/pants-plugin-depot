@@ -27,7 +27,7 @@ class Typos(TemplatedExternalTool):
 
     default_version = "1.51.1"
     # Compute with: `curl -L $URL | tee >(wc -c) >(shasum -a 256) >/dev/null`
-    # Pants declares these class attributes without `ClassVar`, so mypy rejects annotating them here.
+    # Pants declares these class attributes without `ClassVar`, so `ty` rejects a `ClassVar` annotation here.
     default_known_versions = [  # noqa: RUF012
         "1.51.1|linux_arm64 |2ac5e37b3236b3c07dec5cdf1527acf143aec4674a6089b0bf424d021b35e099|7190748",
         "1.51.1|linux_x86_64|93c301fd4120ff076e2cc2a6d6a61cab4a4bdb81899287c0938b452e56d1f454|8248699",
@@ -40,7 +40,7 @@ class Typos(TemplatedExternalTool):
         "https://github.com/crate-ci/typos/releases/download/v{version}/typos-v{version}-{platform}.tar.gz"
     )
     # The musl builds are statically linked, so they run on any glibc or musl based distribution.
-    default_url_platform_mapping = {  # noqa: RUF012
+    default_url_platform_mapping: dict[str, str] = {  # noqa: RUF012
         "linux_arm64": "aarch64-unknown-linux-musl",
         "linux_x86_64": "x86_64-unknown-linux-musl",
         "macos_arm64": "aarch64-apple-darwin",

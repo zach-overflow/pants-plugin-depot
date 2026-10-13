@@ -39,7 +39,7 @@ def pyproject_fmt_rule_runner(rule_runner_factory: RuleRunnerFactory) -> RuleRun
 
 def test_create_pyproject_fmt_venv_pex(pyproject_fmt_rule_runner: RuleRunner) -> None:
     pyproject_fmt = pyproject_fmt_rule_runner.request(PyprojectFmt, [])
-    expected = create_autospec(VenvPex, instance=True)
+    expected: VenvPex = create_autospec(VenvPex, instance=True)
     pex_requests: list[PexRequest] = []
 
     def mock_create_venv_pex(pex_request: PexRequest) -> VenvPex:

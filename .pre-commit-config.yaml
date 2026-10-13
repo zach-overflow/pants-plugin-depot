@@ -11,8 +11,8 @@ repos:
         groups: [linting]
         priority: 2
 
-      - id: mypy
-        name: mypy
+      - id: ty
+        name: ty
         entry: pants --changed-since=HEAD check
         language: system
         files: '^.*\.py$'

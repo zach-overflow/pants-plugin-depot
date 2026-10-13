@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 class TyposLintRequest(LintFilesRequest):
     """Unique type for triggering a `typos` check-mode run as part of the `pants lint` goal."""
 
-    tool_subsystem = Typos  # type: ignore[assignment]
+    tool_subsystem = Typos  # ty: ignore[invalid-assignment]
 
 
 @rule(desc="Partition the files for `typos` to check", level=LogLevel.DEBUG)
@@ -33,7 +33,7 @@ async def partition_typos_lint_inputs(request: TyposLintRequest.PartitionRequest
 
 
 @rule(desc="Check spelling with `typos`", level=LogLevel.DEBUG)
-async def run_typos_lint(request: TyposLintRequest.Batch) -> LintResult:
+async def run_typos_lint(request: TyposLintRequest.Batch[str, Any]) -> LintResult:
     snapshot = await digest_to_snapshot(**implicitly(PathGlobs(request.elements)))
     process = await setup_typos_process(
         TyposProcessRequest(snapshot=snapshot, files=snapshot.files, mode=TyposMode.LINT), **implicitly()

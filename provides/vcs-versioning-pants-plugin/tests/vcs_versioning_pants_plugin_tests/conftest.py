@@ -1,5 +1,5 @@
 import subprocess  # noqa: TID251 -- test-only: drives a throwaway git repo, like Pants' own vcs_versioning_test
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -65,7 +65,7 @@ class GitRepo:
         return self.worktree / ".git"
 
     @contextmanager
-    def env(self) -> Iterator[None]:
+    def env(self) -> Generator[None]:
         """
         Point git at this repository.
 

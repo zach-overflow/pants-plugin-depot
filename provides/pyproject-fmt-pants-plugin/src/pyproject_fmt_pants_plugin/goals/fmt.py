@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 class PyprojectFmtRequest(FmtFilesRequest):
     """Unique type for triggering a `pyproject-fmt` run as part of the `pants fmt` and `pants lint` goals."""
 
-    tool_subsystem = PyprojectFmt  # type: ignore[assignment]
+    tool_subsystem = PyprojectFmt  # ty: ignore[invalid-assignment]
 
 
 @rule(desc="Partitions the `pyproject.toml` input files for formatting.", level=LogLevel.DEBUG)

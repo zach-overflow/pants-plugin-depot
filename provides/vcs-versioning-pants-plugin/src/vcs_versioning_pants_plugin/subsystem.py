@@ -31,7 +31,10 @@ class VcsVersioning(PythonToolBase):
     register_interpreter_constraints = True
     # A list, not a tuple: Pants uses it as the default of the list-typed `interpreter_constraints` option.
     default_interpreter_constraints: ClassVar[Sequence[str]] = ["CPython>=3.14,<3.15"]
-    default_lockfile_resource = ("vcs_versioning_pants_plugin.lockfile_resource", "vcs_versioning_lockfile.json")
+    default_lockfile_resource: ClassVar[tuple[str, str]] = (
+        "vcs_versioning_pants_plugin.lockfile_resource",
+        "vcs_versioning_lockfile.json",
+    )
 
 
 def rules() -> CollectedRules:
