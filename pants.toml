@@ -41,6 +41,14 @@ build_file_name = "BUILD"
 
 [pyproject-fmt]
 config_discovery = true
+# The repo-wide `pyproject-fmt` settings live here rather than in a `pyproject-fmt.toml` file.
+# https://pyproject-fmt.readthedocs.io/en/latest/configuration.html#command-line-interface
+args = [
+  "--column-width=120",
+  "--indent=2",
+  "--keep-full-version",
+  "--no-generate-python-version-classifiers",
+]
 
 [taplo]
 glob_pattern = [

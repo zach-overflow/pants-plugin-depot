@@ -27,9 +27,14 @@ def fmt_rule_runner(rule_runner_factory: RuleRunnerFactory) -> RuleRunner:
             QueryRule(DigestContents, [Digest]),
         ]
     )
-    # Mirror `[python].pip_version` in `pants.toml`: Pants' default pip predates CPython 3.14.
-    rule_runner.set_options(["--python-pip-version=latest"], env_inherit={"PATH", "PYENV_ROOT", "HOME"})
+    _set_options(rule_runner)
     return rule_runner
+
+
+def _set_options(rule_runner: RuleRunner, *extra_options: str) -> None:
+    """Sets the `RuleRunner` options; `set_options` replaces rather than extends the previous ones."""
+    # Mirror `[python].pip_version` in `pants.toml`: Pants' default pip predates CPython 3.14.
+    rule_runner.set_options(["--python-pip-version=latest", *extra_options], env_inherit={"PATH", "PYENV_ROOT", "HOME"})
 
 
 @pytest.fixture(scope="function")
@@ -137,4 +142,37 @@ def test_run_pyproject_fmt_formatting_no_tool_section(
     output = fmt_rule_runner.request(DigestContents, [result.output.digest])
     assert {file.path: file.content.decode() for file in output} == {
         filepath: template.format(name=project_name) for filepath, project_name in projects.items()
+    }
+
+
+@pytest.mark.parametrize(
+    ("args", "has_standalone_config"),
+    [
+        pytest.param(["--column-width=60", "--indent=2"], False, id="args-alone"),
+        pytest.param(["--column-width=120"], True, id="standalone-config-overrides-args"),
+    ],
+)
+def test_run_pyproject_fmt_formatting_with_args_option(
+    fmt_rule_runner: RuleRunner,
+    dedicated_pyproject_fmt_config: tuple[str, str],
+    pyproject_toml_factory: TomlFactory,
+    args: list[str],
+    has_standalone_config: bool,
+) -> None:
+    """Validates `[pyproject-fmt].args` reaches `pyproject-fmt` and that a `pyproject-fmt.toml` takes precedence."""
+    _set_options(fmt_rule_runner, f"--pyproject-fmt-args={args!r}")
+    src_files: dict[str, str] = dict()
+    if has_standalone_config:
+        _add_mock_file(mock_files=src_files, entry=dedicated_pyproject_fmt_config)
+    _add_mock_file(mock_files=src_files, entry=pyproject_toml_factory("pyproject.toml", "root-project", None))
+    fmt_rule_runner.write_files(src_files)
+
+    snapshot = fmt_rule_runner.request(Snapshot, [PathGlobs(["**/pyproject.toml"])])
+    batch = PyprojectFmtRequest.Batch("", snapshot.files, partition_metadata=None, snapshot=snapshot)
+    result = fmt_rule_runner.request(FixResult, [batch])
+
+    assert result.did_change
+    output = fmt_rule_runner.request(DigestContents, [result.output.digest])
+    assert {file.path: file.content.decode() for file in output} == {
+        "pyproject.toml": _FORMATTED_WITH_STANDALONE_CONFIG.format(name="root-project")
     }
