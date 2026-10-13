@@ -2,6 +2,18 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [pyproject-fmt-pants-plugin-v0.4.0](https://github.com/zach-overflow/pants-plugin-depot/compare/1070803aae21ed39f40acd9071d7d090b036c2d9..pyproject-fmt-pants-plugin-v0.4.0) - 2026-10-13
+
+#### Features
+
+- (**pyproject-fmt-pants-plugin**) Add `[pyproject-fmt].args` option (#20) - ([e616488](https://github.com/zach-overflow/pants-plugin-depot/commit/e61648860a967d9c87a090d85da654bcdf01842b)) - [@zach-overflow](https://github.com/zach-overflow)
+
+#### Internal Tooling / Development
+
+- switch type checking from mypy to `ty` via `ty-pants-plugin` (#19) - ([1070803](https://github.com/zach-overflow/pants-plugin-depot/commit/1070803aae21ed39f40acd9071d7d090b036c2d9)) - [@zach-overflow](https://github.com/zach-overflow)
+
+- - -
+
 ## [pyproject-fmt-pants-plugin-v0.3.0](https://github.com/zach-overflow/pants-plugin-depot/compare/c61a96c10f0cc92aeefe871a8be6e14aa4f6478f..pyproject-fmt-pants-plugin-v0.3.0) - 2026-10-12
 
 #### Features
