@@ -16,6 +16,7 @@ scopes = [
   "goals",
   "hooks",
   "maturin-pants-plugin",
+  "oras-pants-plugin",
   "pants-plugin-developer-utils",
   "pyproject-fmt-pants-plugin",
   "pyproject-fmt-plugin",
@@ -65,6 +66,9 @@ path = "provides/actionlint-pants-plugin"
 
 [monorepo.packages.maturin-pants-plugin]
 path = "provides/maturin-pants-plugin"
+
+[monorepo.packages.oras-pants-plugin]
+path = "provides/oras-pants-plugin"
 
 [monorepo.packages.pants-plugin-developer-utils]
 path = "provides/pants-plugin-developer-utils"

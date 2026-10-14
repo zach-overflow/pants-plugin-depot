@@ -26,6 +26,11 @@ project.
       <td>Build and publish Rust-backed Python wheels with <a href="https://www.maturin.rs/"><code>maturin</code></a>.</td>
     </tr>
     <tr>
+      <td style="white-space: nowrap;"><a href="provides/oras-pants-plugin/README.md"><code>oras-pants-plugin</code></a></td>
+      <td><a href="https://pypi.org/project/oras-pants-plugin/"><img alt="PyPI Version" src="https://img.shields.io/pypi/v/oras-pants-plugin?style=plastic&color=blue"></a></td>
+      <td>Publishes <code>pex_binary</code> outputs to OCI registries as OCI artifacts with <a href="https://oras.land/"><code>oras</code></a>.</td>
+    </tr>
+    <tr>
       <td style="white-space: nowrap;"><a href="provides/pants-plugin-developer-utils/README.md"><code>pants-plugin-developer-utils</code></a></td>
       <td><a href="https://pypi.org/project/pants-plugin-developer-utils/"><img alt="PyPI Version" src="https://img.shields.io/pypi/v/pants-plugin-developer-utils?style=plastic&color=blue">
 </a></td>
