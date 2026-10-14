@@ -4,11 +4,10 @@ All commands run from the repo root.
 
 ## Prerequisites
 
-- [Pants](https://www.pantsbuild.org/stable/docs/getting-started/installing-pants) (the launcher; the
-  version is pinned in `pants.toml`)
+- [Pants](https://www.pantsbuild.org/stable/docs/getting-started/installing-pants) (the version is pinned in `pants.toml`)
 - Python 3.14
 - [prek](https://prek.j178.dev/) for git hooks: `prek install`
-- [cocogitto](https://docs.cocogitto.io/) for conventional commits: `cog commit`
+- [cog](https://docs.cocogitto.io/) for conventional commits: `cog commit`
 
 ## Repository layout
 
@@ -41,7 +40,7 @@ pants lint ::                           # actionlint, ruff, shellcheck, shfmt, t
 pants check ::                          # ty
 pants test ::                           # pytest
 pants package ::                        # build every plugin's wheel -> dist/
-pants generate-lockfiles                # regenerate 3rdparty/python/plugin-lockfile.json
+pants generate-lockfiles                # regenerate etc/3rdparty/python/plugin-lockfile.json
 pants generate-lockfiles --resolve=vcs-versioning   # regenerate the bundled vcs-versioning tool lockfile
 pants export-codegen provides/<plugin-name>/src/<root_module>:scm-version   # preview version.py -> dist/codegen/
 pants export --resolve=plugin-resolve   # virtualenv for IDEs -> dist/export/
