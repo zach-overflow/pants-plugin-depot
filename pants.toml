@@ -4,7 +4,6 @@ backend_packages = [
   "pants.backend.build_files.fmt.ruff",
   "pants.backend.experimental.python.lint.ruff.check",
   "pants.backend.experimental.python.lint.ruff.format",
-  "pants.backend.experimental.tools.yamllint",
   "pants.backend.plugin_development",
   "pants.backend.python",
   "pants.backend.shell",
@@ -93,7 +92,7 @@ separate_lockfile_metadata_file = true
 
 [python.resolves]
 maturin = "provides/maturin-pants-plugin/src/maturin_pants_plugin/lockfile_resource/maturin_lockfile.json"
-"plugin-resolve" = "3rdparty/python/plugin-lockfile.json"
+"plugin-resolve" = "etc/3rdparty/python/plugin-lockfile.json"
 "vcs-versioning" = "provides/vcs-versioning-pants-plugin/src/vcs_versioning_pants_plugin/lockfile_resource/vcs_versioning_lockfile.json"
 
 [python-infer]
@@ -117,6 +116,3 @@ known_versions = [
 [update-build-files]
 fmt = true
 formatter = "ruff"
-
-[yamllint]
-config_file_name = ".yamllint.yaml"
