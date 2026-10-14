@@ -4,6 +4,7 @@ backend_packages = [
   "pants.backend.build_files.fmt.ruff",
   "pants.backend.experimental.python.lint.ruff.check",
   "pants.backend.experimental.python.lint.ruff.format",
+  "pants.backend.experimental.tools.yamllint",
   "pants.backend.plugin_development",
   "pants.backend.python",
   "pants.backend.shell",
@@ -116,3 +117,6 @@ known_versions = [
 [update-build-files]
 fmt = true
 formatter = "ruff"
+
+[yamllint]
+config_file_name = "etc/.yamllint.yaml"
