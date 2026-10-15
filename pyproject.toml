@@ -7,7 +7,7 @@ indent-width = 4
 src = [ "provides/*/src", "provides/*/tests" ]
 format.skip-magic-trailing-comma = true
 format.docstring-code-format = true
-lint.select = [ "B", "E", "F", "I", "SIM", "UP" ]
+lint.select = [ "B", "E", "F", "I", "S", "SIM", "UP" ]
 lint.extend-select = [
   "ANN",
   "C416",
@@ -64,7 +64,13 @@ lint.ignore = [
   "Q003",
   "W191",
 ]
-lint.per-file-ignores."provides/*/tests/**/*.py" = [ "D101", "D107" ]
+lint.per-file-ignores."provides/*/tests/**/*.py" = [
+  # Don't require docstrings in tests
+  "D101",
+  "D107",
+  # Don't raise bandit errors on `assert` statements in tests.
+  "S101",
+]
 # Like mypy, accept `__init__` without `-> None` when a parameter is annotated.
 lint.flake8-annotations.mypy-init-return = true
 lint.flake8-tidy-imports.ban-relative-imports = "all"
