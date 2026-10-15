@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [pyproject-fmt-pants-plugin-v0.4.1](https://github.com/zach-overflow/pants-plugin-depot/compare/2d330d68d9c90e4a22e0fa5788173219f719931d..pyproject-fmt-pants-plugin-v0.4.1) - 2026-10-15
+
+#### Internal Tooling / Development
+
+- (**builds**) Replace repetitive target code with internal pants macros (#24) - ([2d330d6](https://github.com/zach-overflow/pants-plugin-depot/commit/2d330d68d9c90e4a22e0fa5788173219f719931d)) - [@zach-overflow](https://github.com/zach-overflow)
+
+- - -
+
 ## [pyproject-fmt-pants-plugin-v0.4.0](https://github.com/zach-overflow/pants-plugin-depot/compare/1070803aae21ed39f40acd9071d7d090b036c2d9..pyproject-fmt-pants-plugin-v0.4.0) - 2026-10-13
 
 #### Features

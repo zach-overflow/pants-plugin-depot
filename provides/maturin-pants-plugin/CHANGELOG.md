@@ -2,6 +2,15 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [maturin-pants-plugin-v0.3.1](https://github.com/zach-overflow/pants-plugin-depot/compare/1070803aae21ed39f40acd9071d7d090b036c2d9..maturin-pants-plugin-v0.3.1) - 2026-10-15
+
+#### Internal Tooling / Development
+
+- (**builds**) Replace repetitive target code with internal pants macros (#24) - ([2d330d6](https://github.com/zach-overflow/pants-plugin-depot/commit/2d330d68d9c90e4a22e0fa5788173219f719931d)) - [@zach-overflow](https://github.com/zach-overflow)
+- switch type checking from mypy to `ty` via `ty-pants-plugin` (#19) - ([1070803](https://github.com/zach-overflow/pants-plugin-depot/commit/1070803aae21ed39f40acd9071d7d090b036c2d9)) - [@zach-overflow](https://github.com/zach-overflow)
+
+- - -
+
 ## [maturin-pants-plugin-v0.3.0](https://github.com/zach-overflow/pants-plugin-depot/compare/a87c03e20d12dbff0bf6e43c19a55ad903a57ec0..maturin-pants-plugin-v0.3.0) - 2026-10-12
 
 #### Features

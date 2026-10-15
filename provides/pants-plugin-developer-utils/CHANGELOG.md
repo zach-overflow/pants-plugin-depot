@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [pants-plugin-developer-utils-v0.2.1](https://github.com/zach-overflow/pants-plugin-depot/compare/2d330d68d9c90e4a22e0fa5788173219f719931d..pants-plugin-developer-utils-v0.2.1) - 2026-10-15
+
+#### Internal Tooling / Development
+
+- (**builds**) Replace repetitive target code with internal pants macros (#24) - ([2d330d6](https://github.com/zach-overflow/pants-plugin-depot/commit/2d330d68d9c90e4a22e0fa5788173219f719931d)) - [@zach-overflow](https://github.com/zach-overflow)
+
+- - -
+
 ## [pants-plugin-developer-utils-v0.2.0](https://github.com/zach-overflow/pants-plugin-depot/compare/a87c03e20d12dbff0bf6e43c19a55ad903a57ec0..pants-plugin-developer-utils-v0.2.0) - 2026-10-12
 
 #### Features
