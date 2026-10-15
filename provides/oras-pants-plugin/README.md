@@ -1,101 +1,120 @@
 # oras-pants-plugin
 
-A [Pantsbuild](https://www.pantsbuild.org/) plugin that publishes the output of `pex_binary` targets to OCI
-registries as [OCI artifacts](https://oras.land/docs/concepts/artifact) with [`oras`](https://oras.land/). Any
-registry that stores OCI artifacts works: GitHub Container Registry, Docker Hub, Artifact Registry, ECR, ACR,
-Harbor, a local `registry:2`, and so on.
+A [Pantsbuild](https://www.pantsbuild.org/) plugin that wraps the outputs of `package`-able targets, such as
+`pex_binary`, as [OCI artifacts](https://oras.land/docs/concepts/artifact) and publishes them to OCI registries
+with [`oras`](https://oras.land/). Any registry that stores OCI artifacts works: GitHub Container Registry,
+Docker Hub, Artifact Registry, ECR, ACR, Harbor, a local `registry:2`, and so on.
 
 ## Installation
 
-Add the plugin to `pants.toml` and enable its backend next to the Python backend:
+Add the plugin to `pants.toml` and enable its backend:
 
 ```toml
 [GLOBAL]
 plugins = ["oras-pants-plugin==<version>"]
 backend_packages.add = ["pants.backend.python", "oras_pants_plugin"]
+
+[oras.registries.ghcr]
+address = "ghcr.io/my-org"
+default = true
 ```
 
-Tell a `pex_binary` target where to push:
+Wrap the targets to publish in an `oci_artifact` target, like the builtin `archive` target does:
 
 ```python
 # src/app/BUILD
-pex_binary(
-    name="app",
-    entry_point="main.py",
-    oci_repositories=["ghcr.io/my-org/app"],
+pex_binary(name="app", entry_point="main.py")
+
+oci_artifact(
+    name="app-artifact",
+    packages=[":app"],
+    oci_repository="app",
     oci_tags=["1.2.0", "latest"],
+    oci_artifact_type="application/vnd.python.pex.v1",
 )
 ```
 
-Then build and push it through the `publish` goal:
+Build it, or build and push it:
 
 ```bash
-pants publish src/app:app
+pants package src/app:app-artifact   # writes the OCI image layout to dist/src.app/app-artifact/
+pants publish src/app:app-artifact   # copies it to ghcr.io/my-org/app:1.2.0 and :latest
 ```
 
-Pull it back anywhere with `oras pull ghcr.io/my-org/app:1.2.0`, which restores `app.pex`.
+Pull it back anywhere with `oras pull ghcr.io/my-org/app:1.2.0`, which restores `src.app/app.pex`.
 
 ## How it works
 
-`oras` is downloaded as a static binary; nothing is installed into a Pants resolve. For every `pex_binary`
-target that lists `oci_repositories`, `pants publish`:
+`oras` is downloaded as a static binary; nothing is installed into a Pants resolve.
 
-1. Packages the target as `pants package` would. A target without `oci_repositories`, with `skip_oras=True`,
-   or run with `[oras].skip = true` is skipped before it is packaged.
-2. Runs one `oras push` per `oci_repositories` entry, in the foreground so `oras` can show progress. Every
-   artifact `pants package` produced for the target (the PEX, plus any `scie` executables) becomes a layer of
-   one OCI artifact, which is tagged with every `oci_tags` entry at once. The manifest's `artifactType` is the
-   target's `oci_media_type`.
-3. Reports each push as published, failed or skipped, like every other publisher. `--publish-output` writes the
-   same as JSON, with the `repository` and `tags` of each push.
+`pants package` builds every `packages` target as `pants package` would, then runs `oras push --oci-layout` to
+write one [OCI image layout](https://github.com/opencontainers/image-spec/blob/main/image-layout.md) directory
+to `output_path` under `--distdir`. Every file or directory the `packages` targets produce becomes one layer,
+titled with its own `--distdir`-relative path (a `packed` or `loose` layout PEX is a directory, pushed as a
+gzipped tar layer that `oras pull` unpacks again). The artifact is tagged with every `oci_tags` entry and the
+manifest's `artifactType` is `oci_artifact_type`.
 
-A `packed` or `loose` layout PEX is a directory, which `oras` pushes as a gzipped tar layer and `oras pull`
-unpacks again. The layer media types are left to `oras`.
+`pants publish` packages the target the same way, then runs one `oras cp --from-oci-layout` per registry, in the
+foreground so `oras` can show progress. The copy addresses the layout's manifest by digest, so the published
+artifact has exactly the digest `pants package` reported. A target without `oci_repository`, that resolves to no
+registry, with `skip_oras=True`, or run with `[oras].skip = true` is skipped before it is packaged. Each copy is
+reported as published, failed or skipped like every other publisher; `--publish-output` writes the same as JSON,
+with the `registry`, `repository`, `tags` and `digest` of each copy.
 
-### Target fields
+### `oci_artifact` fields
 
-| Field              | Target                       | Purpose                                                                                                                                                                       |
-| :----------------- | :--------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `oci_repositories` | `pex_binary`, `pex_binaries` | `<registry>/<repository>` references to push to, such as `ghcr.io/my-org/app` or `localhost:5000/app`. One push per entry. A reference MUST NOT carry a tag or digest.        |
-| `oci_tags`         | `pex_binary`, `pex_binaries` | Tags applied to the artifact in every repository. Default: `["latest"]`. `[]` pushes the artifact untagged, addressable by digest only.                                       |
-| `oci_media_type`   | `pex_binary`, `pex_binaries` | The `artifactType` of the pushed manifest, passed as `--artifact-type`. Default: `application/vnd.python.pex.v1`.                                                             |
-| `skip_oras`        | `pex_binary`, `pex_binaries` | If true, the target is skipped by `pants publish`.                                                                                                                            |
-| `overrides`        | `pex_binaries`               | Per-binary values for the fields above, e.g. `overrides={"tool.py": {"skip_oras": True}}`. On `pex_binaries` the fields apply to every generated `pex_binary`.               |
+| Field               | Purpose                                                                                                                                                                                                                                                       |
+| :------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `packages`          | Addresses of targets `pants package` can build, e.g. `[":app"]`. Each output becomes a layer.                                                                                                                                                                 |
+| `output_path`       | Where `pants package` writes the layout directory, relative to `--distdir`. Default: `<spec path with dots>/<target name>`.                                                                                                                                   |
+| `oci_tags`          | Tags applied in the layout and in every registry. Default: `["latest"]`. `[]` leaves the artifact untagged, addressable by digest only.                                                                                                                      |
+| `oci_artifact_type` | The `artifactType` of the manifest, passed as `--artifact-type`, e.g. `application/vnd.python.pex.v1`. Default: `oras`' `application/vnd.unknown.artifact.v1`.                                                                                               |
+| `oci_registries`    | Registry addresses (`ghcr.io/my-org`, `localhost:5000`) or `@aliases` of `[oras].registries` entries to publish to. Default: every `[oras].registries` entry with `default = true`.                                                                           |
+| `oci_repository`    | The repository within each registry, e.g. `team/app`; the published reference is `<registry>/<oci_repository>:<tag>`. Unset skips the target in `pants publish`.                                                                                             |
+| `skip_oras`         | If true, the target is skipped by `pants publish`.                                                                                                                                                                                                            |
 
 ## Configuration
 
-| Option                     | Default         | Purpose                                                                                                                                        |
-| :------------------------- | :-------------- | :--------------------------------------------------------------------------------------------------------------------------------------------- |
-| `[oras].skip`              | `false`         | Skip `oras` during `pants publish`.                                                                                                            |
-| `[oras].args`              | `[]`            | Extra arguments for every `oras push`, e.g. `--plain-http` or `--registry-config /path/to/auth.json`. They follow the plugin's own flags, so a repeated flag overrides it. |
-| `[oras].extra_env_vars`    | `[]`            | Extra environment variables for `oras`, as `NAME=value` or `NAME` to copy from Pants' environment, e.g. `HTTPS_PROXY` or `SSL_CERT_FILE`.     |
-| `[oras].version`           | bundled default | `oras` release to download.                                                                                                                    |
-| `[oras].known_versions`    | bundled default | Checksums of downloadable releases; extend to use another version.                                                                             |
+| Option                  | Default         | Purpose                                                                                                                                                                                                  |
+| :---------------------- | :-------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[oras].registries`     | `{}`            | Registries by alias: `{"alias": {"address": "host[:port][/prefix]", "default": bool}}`. An entry aliased `default` is a default too.                                                                     |
+| `[oras].skip`           | `false`         | Skip `oras` during `pants publish`.                                                                                                                                                                      |
+| `[oras].args`           | `[]`            | Extra arguments for every `oras cp`, e.g. `--to-plain-http` or `--to-insecure`. The registry is the copy's destination, so its flags are the `--to-*` ones. They follow the plugin's own flags, so a repeated flag overrides it. |
+| `[oras].config`         | unset           | A registry authentication file in the `~/.docker/config.json` format, passed as `--to-registry-config`. Relative paths are resolved from the build root.                                                 |
+| `[oras].extra_env_vars` | `[]`            | Extra environment variables for `oras cp`, as `NAME=value` or `NAME` to copy from Pants' environment, e.g. `HTTPS_PROXY` or `SSL_CERT_FILE`.                                                             |
+| `[oras].version`        | bundled default | `oras` release to download.                                                                                                                                                                              |
+| `[oras].known_versions` | bundled default | Checksums of downloadable releases; extend to use another version.                                                                                                                                       |
 
 ### Credentials
 
 `oras` reads the credentials that `docker login` or `oras login` store in `$DOCKER_CONFIG/config.json` or
 `~/.docker/config.json`, and runs the credential helpers configured there. `PATH`, `HOME` and `DOCKER_CONFIG`
-are always passed to `oras`, so logging in once is enough:
+are always passed to `oras cp`, so logging in once is enough:
 
 ```bash
 oras login ghcr.io          # or: docker login ghcr.io
-pants publish src/app:app
+pants publish src/app:app-artifact
 ```
 
-In CI, pass the token to a login step before `pants publish`, or point `[oras].args` at an auth file with
-`--registry-config`. Avoid `--username`/`--password` in `pants.toml`: the file is committed.
+In CI, pass the token to a login step before `pants publish`, or point `[oras].config` at an auth file. Avoid
+`--to-username`/`--to-password` in `[oras].args`: `pants.toml` is committed.
 
-### Pushing to a directory
+### Publishing into a directory
 
-`oras` can write to an [OCI image layout](https://github.com/opencontainers/image-spec/blob/main/image-layout.md)
-directory instead of a registry, which is handy for inspecting what would be pushed:
+`oras cp` can write to an OCI image layout directory instead of a registry, which is handy for inspecting what
+would be pushed. With `--to-oci-layout`, the registry reference becomes a directory path in the sandbox, so
+combine it with `--keep-sandboxes=always` to look at the result:
 
 ```bash
-pants --oras-args="['--oci-layout-path', '/tmp/app-layout']" publish src/app:app
+pants --oras-args="['--to-oci-layout']" --keep-sandboxes=always publish src/app:app-artifact
 ```
 
-The reference in `oci_repositories` is kept as the tag name inside the layout.
+The layout `pants package` writes to `dist/` is the same artifact; `oras discover`, `oras manifest fetch` and
+`oras pull` all accept it with `--oci-layout`:
+
+```bash
+oras manifest fetch --oci-layout dist/src.app/app-artifact:1.2.0 | jq
+```
 
 ### Using a different `oras` version
 
@@ -123,8 +142,8 @@ release's `oras_<version>_checksums.txt` lists the same checksums.
 | :----- | :----- | :----- | :--------- |
 | `0.x`  | `2.33` | `3.14` | `>=1.3,<2` |
 
-Pants loads plugins into its own interpreter, so the plugin requires the Python version Pants runs on. The PEX
-being published may target any Python version.
+Pants loads plugins into its own interpreter, so the plugin requires the Python version Pants runs on. The
+packages being wrapped may target any Python version.
 
 ## Releases
 

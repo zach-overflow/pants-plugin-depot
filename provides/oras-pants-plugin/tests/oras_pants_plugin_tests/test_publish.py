@@ -1,9 +1,9 @@
 import dataclasses
 import json
+from textwrap import dedent
 from typing import Any
 
 import pytest
-from pants.backend.python.goals.package_pex_binary import PexBinaryFieldSet
 from pants.core.goals.package import BuiltPackage, BuiltPackageArtifact
 from pants.core.goals.publish import (
     CheckSkipRequest,
@@ -20,42 +20,60 @@ from pants.engine.unions import UnionRule
 from pants.testutil.rule_runner import RuleRunner, run_rule_with_mocks
 from pants.util.frozendict import FrozenDict
 
+from oras_pants_plugin.constants import SandboxDir
+from oras_pants_plugin.goals.common import OCILayoutManifest, OCILayoutRequest
+from oras_pants_plugin.goals.package import OCIArtifactPackageFieldSet
 from oras_pants_plugin.goals.publish import (
-    ORAS_INPUT_DIR,
-    OrasPublishFieldSet,
-    OrasPublishPexFieldSet,
-    OrasPublishPexRequest,
+    OCICopyRequest,
+    OCIPublishFieldSet,
+    OCIPublishRequest,
     OrasPublishSkipRequest,
-    OrasPushRequest,
-    check_if_skip_oras_push,
-    construct_oras_push_argv,
-    publish_pex_as_oci_artifact,
+    check_if_skip_oras_publish,
+    construct_oras_cp_argv,
+    publish_oci_artifact,
 )
-from oras_pants_plugin_tests.conftest import APP_ADDRESS, APP_DIR, OrasFactory, make_pex_binary
+from oras_pants_plugin.registries import OCIRegistryNotFoundError
+from oras_pants_plugin_tests.conftest import APP_ADDRESS, APP_DIR, LAYOUT_PATH, OrasFactory, make_oci_artifact
 
-_REPOSITORIES = ("ghcr.io/my-org/my-app", "localhost:5000/my-app")
-_PEX_PATH = "src.app/app.pex"
-_FILES = (_PEX_PATH, "src.app/app")
+_REGISTRIES = ("ghcr.io/my-org", "localhost:5000")
+_REPOSITORY = "my-app"
+_DIGEST = "sha256:" + "0" * 64
 _OUTPUT_DATA = PublishOutputData({"publisher": "oras", "target": APP_ADDRESS})
+_PROD_REGISTRIES = {"prod": {"address": "ghcr.io/my-org", "default": True}}
 
 
 def _skip_request(**field_values: Any) -> OrasPublishSkipRequest:
-    target = make_pex_binary(**field_values)
+    target = make_oci_artifact(**field_values)
     return OrasPublishSkipRequest(
-        package_fs=PexBinaryFieldSet.create(target), publish_fs=OrasPublishPexFieldSet.create(target)
+        package_fs=OCIArtifactPackageFieldSet.create(target), publish_fs=OCIPublishFieldSet.create(target)
     )
 
 
-def _publish_request(packages: tuple[BuiltPackage, ...], **field_values: Any) -> OrasPublishPexRequest:
-    field_set = OrasPublishPexFieldSet.create(make_pex_binary(oci_repositories=list(_REPOSITORIES), **field_values))
-    return OrasPublishPexRequest(field_set=field_set, packages=packages)
+def _publish_request(packages: tuple[BuiltPackage, ...], **field_values: Any) -> OCIPublishRequest:
+    field_set = OCIPublishFieldSet.create(
+        make_oci_artifact(**{"oci_registries": list(_REGISTRIES), "oci_repository": _REPOSITORY, **field_values})
+    )
+    return OCIPublishRequest(field_set=field_set, packages=packages)
+
+
+def _copy_request(**overrides: Any) -> OCICopyRequest:
+    values: dict[str, Any] = {
+        "registry": "ghcr.io/my-org",
+        "repository": _REPOSITORY,
+        "tags": ("v1",),
+        "layout_path": LAYOUT_PATH,
+        "manifest_digest": _DIGEST,
+        "input_digest": EMPTY_DIGEST,
+    }
+    values.update(overrides)
+    return OCICopyRequest(**values)
 
 
 def test_field_set() -> None:
-    target = make_pex_binary(oci_repositories=["ghcr.io/my-org/my-app"])
-    assert OrasPublishPexFieldSet.is_applicable(target)
-    field_set = OrasPublishPexFieldSet.create(target)
-    package_fs = PexBinaryFieldSet.create(target)
+    target = make_oci_artifact(oci_repository=_REPOSITORY)
+    assert OCIPublishFieldSet.is_applicable(target)
+    field_set = OCIPublishFieldSet.create(target)
+    package_fs = OCIArtifactPackageFieldSet.create(target)
 
     skip_request = field_set.check_skip_request(package_fs)
 
@@ -64,46 +82,73 @@ def test_field_set() -> None:
     assert skip_request.package_fs is package_fs
     assert skip_request.address == APP_ADDRESS
     assert field_set.get_output_data() == _OUTPUT_DATA
-    assert OrasPublishPexFieldSet.rules() == (
-        UnionRule(PublishFieldSet, OrasPublishPexFieldSet),
-        UnionRule(PublishRequest, OrasPublishPexRequest),
+    assert OCIPublishFieldSet.rules() == (
+        UnionRule(PublishFieldSet, OCIPublishFieldSet),
+        UnionRule(PublishRequest, OCIPublishRequest),
     )
-    assert set(OrasPublishPexFieldSet.required_fields) > set(OrasPublishFieldSet.required_fields)
 
 
 @pytest.mark.parametrize(
-    ("skip_option", "field_values", "expected_reason"),
+    ("options", "field_values", "expected_reason"),
     [
-        (True, {"oci_repositories": ["ghcr.io/my-org/my-app"]}, "(by `[oras].skip = True`)"),
+        ({"skip": True}, {"oci_repository": _REPOSITORY, "oci_registries": ["ghcr.io"]}, "(by `[oras].skip = True`)"),
         (
-            False,
-            {"oci_repositories": ["ghcr.io/my-org/my-app"], "skip_oras": True},
+            {},
+            {"oci_repository": _REPOSITORY, "oci_registries": ["ghcr.io"], "skip_oras": True},
             f"(by `skip_oras` on {APP_ADDRESS})",
         ),
-        (False, {}, f"(no `oci_repositories` specified for {APP_ADDRESS})"),
-        (False, {"oci_repositories": []}, f"(no `oci_repositories` specified for {APP_ADDRESS})"),
+        ({}, {"oci_registries": ["ghcr.io"]}, f"(no `oci_repository` specified for {APP_ADDRESS})"),
+        (
+            {},
+            {"oci_repository": _REPOSITORY},
+            f"(no `oci_registries` resolved for {APP_ADDRESS}; set the field or mark an `[oras].registries` entry "
+            "`default = true`)",
+        ),
+        (
+            {},
+            {"oci_repository": _REPOSITORY, "oci_registries": []},
+            f"(no `oci_registries` resolved for {APP_ADDRESS}; set the field or mark an `[oras].registries` entry "
+            "`default = true`)",
+        ),
     ],
 )
-def test_check_if_skip_oras_push_skips(
-    skip_option: bool, field_values: dict[str, Any], expected_reason: str, oras_factory: OrasFactory
+def test_check_if_skip_oras_publish_skips(
+    options: dict[str, Any], field_values: dict[str, Any], expected_reason: str, oras_factory: OrasFactory
 ) -> None:
     actual = run_rule_with_mocks(
-        check_if_skip_oras_push, rule_args=[_skip_request(**field_values), oras_factory(skip=skip_option)]
+        check_if_skip_oras_publish, rule_args=[_skip_request(**field_values), oras_factory(**options)]
     )
 
     assert actual.skip_publish
     assert actual.skip_package
     assert actual.skipped_packages == (
-        PublishPackages(names=(_PEX_PATH,), description=expected_reason, data=_OUTPUT_DATA),
+        PublishPackages(names=(APP_ADDRESS.spec,), description=expected_reason, data=_OUTPUT_DATA),
     )
 
 
-def test_check_if_skip_oras_push_does_not_skip(oras_factory: OrasFactory) -> None:
+@pytest.mark.parametrize(
+    ("options", "field_values"),
+    [
+        ({}, {"oci_repository": _REPOSITORY, "oci_registries": ["ghcr.io"]}),
+        ({"registries": _PROD_REGISTRIES}, {"oci_repository": _REPOSITORY}),
+        ({"registries": _PROD_REGISTRIES}, {"oci_repository": _REPOSITORY, "oci_registries": ["@prod"]}),
+    ],
+)
+def test_check_if_skip_oras_publish_does_not_skip(
+    options: dict[str, Any], field_values: dict[str, Any], oras_factory: OrasFactory
+) -> None:
     actual = run_rule_with_mocks(
-        check_if_skip_oras_push, rule_args=[_skip_request(oci_repositories=["ghcr.io/my-org/my-app"]), oras_factory()]
+        check_if_skip_oras_publish, rule_args=[_skip_request(**field_values), oras_factory(**options)]
     )
 
     assert actual == CheckSkipResult.no_skip()
+
+
+def test_check_if_skip_oras_publish_rejects_unknown_alias(oras_factory: OrasFactory) -> None:
+    request = _skip_request(oci_repository=_REPOSITORY, oci_registries=["@staging"])
+
+    with pytest.raises(OCIRegistryNotFoundError, match="staging"):
+        run_rule_with_mocks(check_if_skip_oras_publish, rule_args=[request, oras_factory()])
 
 
 @pytest.mark.parametrize(
@@ -114,106 +159,129 @@ def test_check_if_skip_oras_push_does_not_skip(oras_factory: OrasFactory) -> Non
         ((), "ghcr.io/my-org/my-app"),
     ],
 )
-def test_push_request_reference(tags: tuple[str, ...], expected_reference: str) -> None:
-    request = OrasPushRequest(repository="ghcr.io/my-org/my-app", tags=tags, files=_FILES, input_digest=EMPTY_DIGEST)
+def test_copy_request_references(tags: tuple[str, ...], expected_reference: str) -> None:
+    request = _copy_request(tags=tags)
 
+    assert request.source == f"{LAYOUT_PATH}@{_DIGEST}"
     assert request.reference == expected_reference
 
 
-def test_construct_oras_push_argv(oras_factory: OrasFactory) -> None:
-    """`[oras].args` follow the plugin's flags, and a `:` in a file path is escaped from `oras`' `<file>:<type>` syntax."""
-    request = OrasPushRequest(
-        repository="ghcr.io/my-org/my-app",
-        tags=("v1",),
-        files=(_PEX_PATH, "dist/app:v1.pex"),
-        input_digest=EMPTY_DIGEST,
-        artifact_type="application/vnd.python.pex.v1",
-    )
+def test_construct_oras_cp_argv(oras_factory: OrasFactory) -> None:
+    """`[oras].args` follow the plugin's flags, so a repeated flag overrides the plugin's value."""
+    oras = oras_factory(args=["--to-plain-http", "--to-registry-config", "/other.json"])
 
-    actual = construct_oras_push_argv(oras_factory(args=["--plain-http", "--artifact-type", "x/y"]), "./oras", request)
-
-    assert actual == (
-        "./oras",
-        "push",
-        "--artifact-type",
-        "application/vnd.python.pex.v1",
-        "--plain-http",
-        "--artifact-type",
-        "x/y",
+    assert construct_oras_cp_argv(oras, _copy_request(), "/root/auth.json") == (
+        "cp",
+        "--from-oci-layout",
+        "--to-registry-config",
+        "/root/auth.json",
+        "--to-plain-http",
+        "--to-registry-config",
+        "/other.json",
+        f"{LAYOUT_PATH}@{_DIGEST}",
         "ghcr.io/my-org/my-app:v1",
-        _PEX_PATH,
-        "dist/app:v1.pex:",
     )
-
-
-def test_construct_oras_push_argv_without_artifact_type(oras_factory: OrasFactory) -> None:
-    request = OrasPushRequest(
-        repository="ghcr.io/my-org/my-app", tags=(), files=(_PEX_PATH,), input_digest=EMPTY_DIGEST
-    )
-
-    assert construct_oras_push_argv(oras_factory(), "./oras", request) == (
-        "./oras",
-        "push",
+    assert construct_oras_cp_argv(oras_factory(), _copy_request(tags=()), None) == (
+        "cp",
+        "--from-oci-layout",
+        f"{LAYOUT_PATH}@{_DIGEST}",
         "ghcr.io/my-org/my-app",
-        _PEX_PATH,
     )
 
 
-def test_publish_pex_as_oci_artifact_without_artifacts() -> None:
-    request = _publish_request((BuiltPackage(EMPTY_DIGEST, ()),))
-
-    actual = run_rule_with_mocks(publish_pex_as_oci_artifact, rule_args=[request])
+@pytest.mark.parametrize(
+    ("packages", "field_values"),
+    [
+        ((BuiltPackage(EMPTY_DIGEST, ()),), {}),
+        ((BuiltPackage(EMPTY_DIGEST, (BuiltPackageArtifact(LAYOUT_PATH),)),), {"oci_registries": []}),
+    ],
+)
+def test_publish_oci_artifact_without_layouts_or_registries(
+    packages: tuple[BuiltPackage, ...], field_values: dict[str, Any], oras_factory: OrasFactory
+) -> None:
+    actual = run_rule_with_mocks(
+        publish_oci_artifact, rule_args=[_publish_request(packages, **field_values), oras_factory()]
+    )
 
     assert actual == PublishProcesses()
 
 
-def test_publish_pex_as_oci_artifact() -> None:
-    """One interactive `oras push` process per repository, each pushing every built artifact with every tag."""
-    packages = (
-        BuiltPackage(EMPTY_DIGEST, (BuiltPackageArtifact(_PEX_PATH), BuiltPackageArtifact(None, ("built it",)))),
-        BuiltPackage(EMPTY_DIGEST, (BuiltPackageArtifact("src.app/app"),)),
-    )
+def test_publish_oci_artifact(oras_factory: OrasFactory) -> None:
+    """One interactive `oras cp` per registry, from the packaged layout's manifest digest, with every tag."""
+    layout_digest = Snapshot.create_for_testing([f"{LAYOUT_PATH}/index.json"], [LAYOUT_PATH]).digest
+    packages = (BuiltPackage(layout_digest, (BuiltPackageArtifact(LAYOUT_PATH), BuiltPackageArtifact(None))),)
     request = _publish_request(packages, oci_tags=["v1", "latest"])
-    merged_digest = Snapshot.create_for_testing(list(_FILES), []).digest
-    push_requests: list[OrasPushRequest] = []
+    layout_requests: list[OCILayoutRequest] = []
+    copy_requests: list[OCICopyRequest] = []
 
-    def mock_setup_oras_push_process(push_request: OrasPushRequest) -> Process:
-        push_requests.append(push_request)
+    def mock_read_oci_layout_manifest(layout_request: OCILayoutRequest) -> OCILayoutManifest:
+        layout_requests.append(layout_request)
+        return OCILayoutManifest(_DIGEST)
+
+    def mock_setup_oras_cp_process(copy_request: OCICopyRequest) -> Process:
+        copy_requests.append(copy_request)
         return Process(
-            argv=("oras", "push", push_request.reference, *push_request.files),
-            description=push_request.reference,
+            argv=("oras", "cp", copy_request.source, copy_request.reference),
+            description=copy_request.reference,
             env={"HOME": "/home/me"},
-            input_digest=push_request.input_digest,
+            input_digest=copy_request.input_digest,
         )
 
     actual = run_rule_with_mocks(
-        publish_pex_as_oci_artifact,
-        rule_args=[request],
+        publish_oci_artifact,
+        rule_args=[request, oras_factory()],
         mock_calls={
-            "pants.engine.intrinsics.merge_digests": lambda _merge_digests: merged_digest,
-            "oras_pants_plugin.goals.publish.setup_oras_push_process": mock_setup_oras_push_process,
+            "pants.engine.intrinsics.merge_digests": lambda _merge_digests: layout_digest,
+            "oras_pants_plugin.goals.common.read_oci_layout_manifest": mock_read_oci_layout_manifest,
+            "oras_pants_plugin.goals.publish.setup_oras_cp_process": mock_setup_oras_cp_process,
         },
     )
 
-    assert push_requests == [
-        OrasPushRequest(
-            repository=repository,
-            tags=("v1", "latest"),
-            files=_FILES,
-            input_digest=merged_digest,
-            artifact_type="application/vnd.python.pex.v1",
-        )
-        for repository in _REPOSITORIES
+    assert layout_requests == [OCILayoutRequest(layout_digest, LAYOUT_PATH)]
+    assert copy_requests == [
+        _copy_request(registry=registry, tags=("v1", "latest"), input_digest=layout_digest) for registry in _REGISTRIES
     ]
-    assert len(actual) == len(_REPOSITORIES)
-    for publish, repository in zip(actual, _REPOSITORIES, strict=True):
-        assert publish.names == _FILES
-        assert publish.description == f"{repository}:v1,latest"
-        assert publish.data == PublishOutputData({"repository": repository, "tags": ("v1", "latest")})
+    assert len(actual) == len(_REGISTRIES)
+    for publish, registry in zip(actual, _REGISTRIES, strict=True):
+        assert publish.names == (LAYOUT_PATH,)
+        assert publish.description == f"{registry}/{_REPOSITORY}:v1,latest"
+        assert publish.data == PublishOutputData(
+            {"registry": registry, "repository": _REPOSITORY, "tags": ("v1", "latest"), "digest": _DIGEST}
+        )
         assert isinstance(publish.process, InteractiveProcess)
-        assert publish.process.process.argv == ("oras", "push", f"{repository}:v1,latest", *_FILES)
+        assert publish.process.process.argv == (
+            "oras",
+            "cp",
+            f"{LAYOUT_PATH}@{_DIGEST}",
+            f"{registry}/{_REPOSITORY}:v1,latest",
+        )
         assert publish.process.process.env == FrozenDict({"HOME": "/home/me"})
-        assert publish.process.process.input_digest == merged_digest
+        assert publish.process.process.input_digest == layout_digest
+
+
+def test_publish_oci_artifact_resolves_registry_aliases(oras_factory: OrasFactory) -> None:
+    packages = (BuiltPackage(EMPTY_DIGEST, (BuiltPackageArtifact(LAYOUT_PATH),)),)
+    field_set = OCIPublishFieldSet.create(
+        make_oci_artifact(oci_registries=["@prod", "localhost:5000", "ghcr.io/my-org"], oci_repository=_REPOSITORY)
+    )
+    oras = oras_factory(registries=_PROD_REGISTRIES)
+
+    actual = run_rule_with_mocks(
+        publish_oci_artifact,
+        rule_args=[OCIPublishRequest(field_set=field_set, packages=packages), oras],
+        mock_calls={
+            "pants.engine.intrinsics.merge_digests": lambda _merge_digests: EMPTY_DIGEST,
+            "oras_pants_plugin.goals.common.read_oci_layout_manifest": lambda _request: OCILayoutManifest(_DIGEST),
+            "oras_pants_plugin.goals.publish.setup_oras_cp_process": lambda request: Process(
+                argv=("oras",), description=request.reference
+            ),
+        },
+    )
+
+    assert [publish.description for publish in actual] == [
+        "ghcr.io/my-org/my-app:latest",
+        "localhost:5000/my-app:latest",
+    ]
 
 
 def test_check_skip_request_is_a_union_member(oras_rule_runner: RuleRunner) -> None:
@@ -221,65 +289,107 @@ def test_check_skip_request_is_a_union_member(oras_rule_runner: RuleRunner) -> N
     oras_rule_runner.set_options(["--oras-skip"])
     oras_rule_runner.write_files(
         {
-            f"{APP_DIR}/BUILD": 'pex_binary(name="app", entry_point="main.py", oci_repositories=["ghcr.io/my-org/my-app"])\n'
+            f"{APP_DIR}/BUILD": (
+                'fake_package(name="cli", content="cli")\n'
+                'oci_artifact(name="app", packages=[":cli"], oci_registries=["ghcr.io"], oci_repository="my-app")\n'
+            )
         }
     )
     target = oras_rule_runner.get_target(APP_ADDRESS)
-    request = OrasPublishPexFieldSet.create(target).check_skip_request(PexBinaryFieldSet.create(target))
+    request = OCIPublishFieldSet.create(target).check_skip_request(OCIArtifactPackageFieldSet.create(target))
     assert isinstance(request, CheckSkipRequest)
 
     actual = oras_rule_runner.request(CheckSkipResult, [request])
 
     assert actual.skipped_packages == (
-        PublishPackages(names=(_PEX_PATH,), description="(by `[oras].skip = True`)", data=_OUTPUT_DATA),
+        PublishPackages(names=(APP_ADDRESS.spec,), description="(by `[oras].skip = True`)", data=_OUTPUT_DATA),
     )
 
 
-def test_oras_push_into_an_oci_layout(oras_rule_runner: RuleRunner) -> None:
-    """
-    Runs the real `oras` (downloaded) with the process the plugin builds. `--oci-layout-path` redirects the push
-    from the registry in the reference to a directory in the sandbox, which is captured and inspected.
-    """
-    oras_rule_runner.set_options(["--oras-args=['--oci-layout-path', 'oci-layout']"])
+def test_default_registries_reach_the_skip_rule_through_the_options(oras_rule_runner: RuleRunner) -> None:
+    oras_rule_runner.set_options(['--oras-registries={"prod": {"address": "ghcr.io/my-org", "default": true}}'])
     oras_rule_runner.write_files(
         {
             f"{APP_DIR}/BUILD": (
-                'pex_binary(name="app", entry_point="main.py", oci_repositories=["example.com/team/app"], '
-                'oci_tags=["v1", "latest"])\n'
-            ),
-            f"{APP_DIR}/main.py": "",
+                'fake_package(name="cli", content="cli")\n'
+                'oci_artifact(name="app", packages=[":cli"], oci_repository="my-app")\n'
+            )
         }
     )
-    pex_snapshot = oras_rule_runner.make_snapshot({_PEX_PATH: "#!/usr/bin/env python3\n"})
-    field_set = OrasPublishPexFieldSet.create(oras_rule_runner.get_target(APP_ADDRESS))
-    request = OrasPublishPexRequest(
-        field_set=field_set, packages=(BuiltPackage(pex_snapshot.digest, (BuiltPackageArtifact(_PEX_PATH),)),)
+    target = oras_rule_runner.get_target(APP_ADDRESS)
+    request = OCIPublishFieldSet.create(target).check_skip_request(OCIArtifactPackageFieldSet.create(target))
+    assert request is not None
+
+    assert oras_rule_runner.request(CheckSkipResult, [request]) == CheckSkipResult.no_skip()
+
+
+def test_oras_cp_from_the_packaged_layout_into_an_oci_layout(oras_rule_runner: RuleRunner) -> None:
+    """
+    Packages a real layout, then runs the real `oras cp` the plugin builds. `--to-oci-layout` in `[oras].args`
+    turns the registry reference into a directory in the sandbox, which is captured and inspected.
+    """
+    oras_rule_runner.set_options(
+        ["--oras-args=['--to-oci-layout']", "--oras-config=auth/config.json"], env_inherit={"PATH", "HOME"}
     )
+    oras_rule_runner.write_files(
+        {
+            f"{APP_DIR}/BUILD": dedent(
+                """\
+                fake_package(name="cli", content="cli")
+                oci_artifact(
+                    name="app",
+                    packages=[":cli"],
+                    oci_tags=["v1", "latest"],
+                    oci_artifact_type="application/vnd.me.app.v1",
+                    oci_registries=["example.com/team"],
+                    oci_repository="app",
+                )
+                """
+            ),
+            "auth/config.json": "{}",
+        }
+    )
+    target = oras_rule_runner.get_target(APP_ADDRESS)
+    package = oras_rule_runner.request(BuiltPackage, [OCIArtifactPackageFieldSet.create(target)])
+    request = OCIPublishRequest(field_set=OCIPublishFieldSet.create(target), packages=(package,))
 
     publishes = oras_rule_runner.request(PublishProcesses, [request])
 
     assert len(publishes) == 1
-    assert publishes[0].names == (_PEX_PATH,)
+    assert publishes[0].names == (LAYOUT_PATH,)
     assert publishes[0].description == "example.com/team/app:v1,latest"
     assert isinstance(publishes[0].process, InteractiveProcess)
     process = publishes[0].process.process
-    assert process.argv[0] == f"{ORAS_INPUT_DIR}/oras"
-    assert process.description == "Push 1 file to example.com/team/app:v1,latest with `oras`"
-    assert ORAS_INPUT_DIR in process.immutable_input_digests
+    assert process.argv[0] == f"{SandboxDir.ORAS_INPUT_DIRNAME}/oras"
+    assert process.argv[1:5] == (
+        "cp",
+        "--from-oci-layout",
+        "--to-registry-config",
+        f"{oras_rule_runner.build_root}/auth/config.json",
+    )
+    assert process.description.startswith(f"Copy OCI artifact {LAYOUT_PATH}@sha256:")
+    assert SandboxDir.ORAS_INPUT_DIRNAME in process.immutable_input_digests
+    assert "PATH" in process.env
 
-    result = oras_rule_runner.request(ProcessResult, [dataclasses.replace(process, output_directories=("oci-layout",))])
+    result = oras_rule_runner.request(
+        ProcessResult, [dataclasses.replace(process, output_directories=("example.com",))]
+    )
 
-    layout = {
+    copied = {
         content.path: content.content
         for content in oras_rule_runner.request(DigestContents, [result.output_digest])
         if isinstance(content, FileContent)
     }
-    index = json.loads(layout["oci-layout/index.json"])
-    # In layout mode `oras` keeps the whole reference in the first tag's annotation, so only the tag suffixes compare.
-    ref_names = [entry["annotations"]["org.opencontainers.image.ref.name"] for entry in index["manifests"]]
-    assert {ref_name.rsplit(":", 1)[-1] for ref_name in ref_names} == {"v1", "latest"}
-    assert {entry["digest"] for entry in index["manifests"]} == {index["manifests"][0]["digest"]}
-    algorithm, digest = index["manifests"][0]["digest"].split(":")
-    manifest = json.loads(layout[f"oci-layout/blobs/{algorithm}/{digest}"])
-    assert manifest["artifactType"] == "application/vnd.python.pex.v1"
-    assert [layer["annotations"]["org.opencontainers.image.title"] for layer in manifest["layers"]] == [_PEX_PATH]
+    index = json.loads(copied["example.com/team/app/index.json"])
+    # `oras` tags concurrently, so the index order varies.
+    assert {entry["annotations"]["org.opencontainers.image.ref.name"] for entry in index["manifests"]} == {
+        "v1",
+        "latest",
+    }
+    assert {entry["digest"] for entry in index["manifests"]} == {publishes[0].data["digest"]}
+    algorithm, hex_digest = index["manifests"][0]["digest"].split(":")
+    manifest = json.loads(copied[f"example.com/team/app/blobs/{algorithm}/{hex_digest}"])
+    assert manifest["artifactType"] == "application/vnd.me.app.v1"
+    assert [layer["annotations"]["org.opencontainers.image.title"] for layer in manifest["layers"]] == [
+        "src.app/cli.txt"
+    ]
