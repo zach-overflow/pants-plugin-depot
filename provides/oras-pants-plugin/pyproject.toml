@@ -4,12 +4,16 @@ requires = [ "setuptools>=84.0.0" ]
 
 [project]
 name = "oras-pants-plugin"
-description = "A Pantsbuild plugin for publishing PEX binaries to OCI registries as OCI artifacts with oras."
+description = """\
+  A Pantsbuild plugin that packages the outputs of other targets as OCI artifacts and publishes them to OCI registries \
+  with oras.\
+  """
 readme = "README.md"
 keywords = [
   "oci",
   "oci artifact",
   "oras",
+  "package",
   "pants",
   "pants plugin",
   "pantsbuild",

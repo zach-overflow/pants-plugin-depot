@@ -4,7 +4,8 @@ import pytest
 from pants.core.util_rules.external_tool import UnsupportedVersion
 from pants.engine.platform import Platform
 
-from oras_pants_plugin.subsystem import ORAS_BASE_ENV_VAR_NAMES, Oras
+from oras_pants_plugin.registries import OCIRegistryOptions
+from oras_pants_plugin.subsystem import Oras
 from oras_pants_plugin_tests.conftest import OrasFactory
 
 _ASSET_PLATFORMS = {
@@ -57,6 +58,20 @@ def test_unsupported_version_is_rejected(oras_factory: OrasFactory) -> None:
         oras_factory(version="1.0.0")
 
 
-def test_credentials_env_vars_are_always_passed() -> None:
+def test_credentials_env_vars_are_always_requested(oras_factory: OrasFactory) -> None:
     """`oras` finds `docker login` credentials through these, so they must not depend on `extra_env_vars`."""
-    assert set(ORAS_BASE_ENV_VAR_NAMES) == {"PATH", "HOME", "DOCKER_CONFIG"}
+    assert tuple(oras_factory().create_env_vars_request().requested) == ("PATH", "HOME", "DOCKER_CONFIG")
+    assert tuple(oras_factory(extra_env_vars=["HTTPS_PROXY", "X=1"]).create_env_vars_request().requested) == (
+        "PATH",
+        "HOME",
+        "DOCKER_CONFIG",
+        "HTTPS_PROXY",
+        "X=1",
+    )
+
+
+def test_registries_are_parsed_from_the_option(oras_factory: OrasFactory) -> None:
+    oras = oras_factory(registries={"prod": {"address": "ghcr.io/my-org", "default": True}})
+
+    assert oras.registries().default == (OCIRegistryOptions(address="ghcr.io/my-org", alias="prod", default=True),)
+    assert oras_factory().registries().default == ()

@@ -1,34 +1,32 @@
-"""The `oras` subsystem: where the binary comes from and how `pants publish` runs it."""
+"""The `oras` subsystem: where the binary comes from and how `pants package` and `pants publish` run it."""
 
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from pants.core.goals.resolves import ExportableTool
 from pants.core.util_rules.external_tool import TemplatedExternalTool
+from pants.engine.env_vars import EnvironmentVarsRequest
 from pants.engine.platform import Platform
 from pants.engine.rules import collect_rules
 from pants.engine.unions import UnionRule
-from pants.option.option_types import ArgsListOption, SkipOption, StrListOption
+from pants.option.option_types import ArgsListOption, DictOption, FileOption, SkipOption, StrListOption
+from pants.util.memo import memoized_method
 from pants.util.strutil import softwrap
+
+from oras_pants_plugin.registries import OCIRegistries
 
 if TYPE_CHECKING:
     from pants_plugin_developer_utils import CollectedRules
 
-ORAS_BASE_ENV_VAR_NAMES: Final[tuple[str, ...]] = ("PATH", "HOME", "DOCKER_CONFIG")
-"""
-Always passed to `oras` processes. `oras` reads the credentials `docker login` and `oras login` store in
-`$DOCKER_CONFIG/config.json` or `~/.docker/config.json`, and runs the credential helpers named there from `PATH`.
-"""
-
 
 class Oras(TemplatedExternalTool):
     """
-    The configuration and tooling wrapper for the `oras` binary to publish arbitrary artifacts as OCI artifacts in
-    OCI-compliant registries. See also: https://oras.land/docs/
+    The configuration and tooling wrapper for the `oras` binary, which builds `oci_artifact` targets into OCI image
+    layouts and copies them to OCI registries. See also: https://oras.land/docs/
     """
 
     options_scope = "oras"
     name = "oras"
-    help = "The `oras` CLI for pushing files to OCI registries as OCI artifacts (https://oras.land/)."
+    help = "The `oras` CLI for building and publishing OCI artifacts (https://oras.land/)."
 
     default_version = "1.3.4"
     # Compute with: `curl -L $URL | tee >(wc -c) >(shasum -a 256) >/dev/null`
@@ -53,31 +51,72 @@ class Oras(TemplatedExternalTool):
 
     skip = SkipOption("publish")
     args = ArgsListOption(
-        example="--registry-config /path/to/auth.json --plain-http",
+        example="--to-plain-http --to-insecure",
         extra_help=softwrap(
             """
-            Added to every `oras push` run by `pants publish`, after the plugin's own flags
-            (https://oras.land/docs/commands/oras_push). A repeated flag overrides the plugin's value.
+            Added to every `oras cp` run by `pants publish`, after the plugin's own flags
+            (https://oras.land/docs/commands/oras_cp). The registry is the copy's destination, so its flags are
+            the `--to-*` ones. A repeated flag overrides the plugin's value.
             """
         ),
+    )
+    config = FileOption(
+        default=None,
+        help=softwrap(
+            """
+            Path to a registry authentication file for `oras`, in the format of `~/.docker/config.json`, passed
+            to `oras cp` as `--to-registry-config`. Relative paths are resolved from the build root. Leave unset
+            to use the credentials stored by `docker login` or `oras login`.
+            See also https://oras.land/docs/how_to_guides/authentication
+            """
+        ),
+    )
+    _registries = DictOption[Any](
+        help=softwrap(
+            """
+            Configure OCI registries by alias. The schema for a registry entry is as follows:
+
+                {
+                    "registry-alias": {
+                        "address": "registry-domain:port",
+                        "default": bool,
+                    },
+                    ...
+                }
+
+            An `oci_artifact` target without `oci_registries` is published to every entry with `default = true`;
+            an entry aliased `default` is a default too. `oci_registries` may instead list registry addresses and
+            aliases prefixed with `@`.
+            """
+        )
     )
     extra_env_vars = StrListOption(
         default=[],
         advanced=True,
         help=softwrap(
             """
-            Additional environment variables to make available to `oras` processes. Entries are either strings
-            in the form `ENV_VAR=value` to use explicitly, or just `ENV_VAR` to copy the value from Pants's own
-            environment. `PATH`, `HOME` and `DOCKER_CONFIG` are always passed through, so the credentials stored
-            by `docker login` or `oras login` and their credential helpers are found. Use this for proxy or TLS
-            settings such as `HTTPS_PROXY` or `SSL_CERT_FILE`.
+            Additional environment variables to make available to `oras` processes that reach a registry.
+            Entries are either strings in the form `ENV_VAR=value` to use explicitly, or just `ENV_VAR` to copy
+            the value from Pants's own environment. `PATH`, `HOME` and `DOCKER_CONFIG` are always passed through,
+            so the credentials stored by `docker login` or `oras login` and their credential helpers are found.
+            Use this for proxy or TLS settings such as `HTTPS_PROXY` or `SSL_CERT_FILE`.
             """
         ),
     )
+    # `oras` reads the credentials from `$DOCKER_CONFIG/config.json` and runs the credential helpers from `PATH`.
+    _REGISTRY_ENV_VAR_NAMES: ClassVar[tuple[str, ...]] = ("PATH", "HOME", "DOCKER_CONFIG")
 
     def generate_exe(self, plat: Platform) -> str:
         """The release tarball extracts the binary to its root, next to the license."""
         return "./oras"
+
+    def create_env_vars_request(self) -> EnvironmentVarsRequest:
+        """The environment of an `oras` process that reaches a registry: the credential variables plus `extra_env_vars`."""
+        return EnvironmentVarsRequest([*self._REGISTRY_ENV_VAR_NAMES, *self.extra_env_vars])
+
+    @memoized_method
+    def registries(self) -> OCIRegistries:
+        return OCIRegistries.from_dict(self._registries)
 
 
 def rules() -> CollectedRules:

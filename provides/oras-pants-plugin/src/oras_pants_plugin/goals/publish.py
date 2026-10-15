@@ -1,17 +1,16 @@
 """
-Implements a publisher for wrapping `BuiltPackage` instances as OCI artifacts and publishing those to an OCI
-registry by using `oras`.
+Implements the `publish` goal for `oci_artifact` targets: the OCI image layout `pants package` built is copied to each
+registry with `oras cp --from-oci-layout`, so the published artifact keeps the packaged digest.
 See also:
     https://www.pantsbuild.org/stable/docs/writing-plugins/common-plugin-tasks/add-a-publisher
-    https://oras.land/
+    https://oras.land/docs/commands/oras_cp
 """
 
 import os
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING
 
-from pants.backend.python.goals.package_pex_binary import PexBinaryFieldSet
-from pants.backend.python.target_types import PexLayoutField
+from pants.base.build_root import BuildRoot
 from pants.core.goals.package import PackageFieldSet
 from pants.core.goals.publish import (
     CheckSkipRequest,
@@ -22,57 +21,41 @@ from pants.core.goals.publish import (
     PublishProcesses,
     PublishRequest,
 )
-from pants.core.util_rules.env_vars import environment_vars_subset
-from pants.core.util_rules.external_tool import download_external_tool
-from pants.engine.env_vars import EnvironmentVarsRequest
 from pants.engine.fs import Digest, MergeDigests
 from pants.engine.intrinsics import merge_digests
-from pants.engine.platform import Platform
 from pants.engine.process import InteractiveProcess, Process, ProcessCacheScope
 from pants.engine.rules import collect_rules, concurrently, implicitly, rule
 from pants.engine.unions import UnionRule
 from pants.util.logging import LogLevel
-from pants.util.strutil import pluralize
 
-from oras_pants_plugin.fields import (
-    OciMediaType,
-    OrasRepositoriesField,
-    OrasTagsField,
-    PexOciMediaType,
-    SkipOrasPublishField,
+from oras_pants_plugin.goals.common import (
+    OCIArtifactFieldSet,
+    OCILayoutRequest,
+    OrasProcessRequest,
+    oci_reference,
+    read_oci_layout_manifest,
+    setup_oras_process,
 )
-from oras_pants_plugin.subsystem import ORAS_BASE_ENV_VAR_NAMES, Oras
+from oras_pants_plugin.subsystem import Oras
+from oras_pants_plugin.target_types import OCIRegistriesField, OCIRepositoryField, SkipOCIPublishField
 
 if TYPE_CHECKING:
     from pants_plugin_developer_utils import CollectedRules
 
-ORAS_INPUT_DIR: Final[str] = "__oras__"
-"""Sandbox directory the downloaded `oras` binary is mounted in, out of the way of the pushed files."""
 
-
-class OrasPublishRequest(PublishRequest["OrasPublishFieldSet"]):
-    """The general `PublishRequest` type which should be subtyped per `oras`-publishable target type."""
-
-
-class OrasPublishPexRequest(OrasPublishRequest):
-    """The `PublishRequest` subtype specifically for publishing PEX artifacts to OCI registries."""
+class OCIPublishRequest(PublishRequest["OCIPublishFieldSet"]):
+    """The `PublishRequest` carrying the OCI image layout(s) `pants package` built for an `oci_artifact` target."""
 
 
 @dataclass(frozen=True)
-class OrasPublishFieldSet(PublishFieldSet[OrasPublishRequest]):
-    """
-    The base `PublishFieldSet` to subtype per `oras`-publishable target type.
+class OCIPublishFieldSet(PublishFieldSet[OCIPublishRequest], OCIArtifactFieldSet):
+    """The `PublishFieldSet` for `oci_artifact` targets."""
 
-    A subtype narrows `required_fields` to the target type's `OciMediaType` subclass, so `oci_media_type` carries
-    that subclass's default.
-    """
+    publish_request_type = OCIPublishRequest
 
-    required_fields = (OrasRepositoriesField, OrasTagsField, OciMediaType, SkipOrasPublishField)
-
-    oci_repositories: OrasRepositoriesField
-    oci_tags: OrasTagsField
-    oci_media_type: OciMediaType
-    skip_oras: SkipOrasPublishField
+    oci_registries: OCIRegistriesField
+    oci_repository: OCIRepositoryField
+    skip_oras: SkipOCIPublishField
 
     def check_skip_request(self, package_fs: PackageFieldSet) -> OrasPublishSkipRequest | None:
         return OrasPublishSkipRequest(package_fs=package_fs, publish_fs=self)
@@ -81,123 +64,127 @@ class OrasPublishFieldSet(PublishFieldSet[OrasPublishRequest]):
         return PublishOutputData({"publisher": "oras", **super().get_output_data()})
 
 
-@dataclass(frozen=True)
-class OrasPublishPexFieldSet(OrasPublishFieldSet):
-    """The fields required for publishing a `pex_binary` target's package output artifact to an OCI registry."""
-
-    publish_request_type = OrasPublishPexRequest
-    required_fields = (*OrasPublishFieldSet.required_fields, PexOciMediaType, PexLayoutField)
+class OrasPublishSkipRequest(CheckSkipRequest[OCIPublishFieldSet]):
+    """The input to determining if an `oci_artifact` target is skipped, and so not packaged, during a publish run."""
 
 
-class OrasPublishSkipRequest(CheckSkipRequest[OrasPublishFieldSet]):
-    """The input to determining if an `oras`-compatible target should be skipped during a publish run."""
-
-
-@rule(desc="Checks whether `oras push` is skipped for a target.", level=LogLevel.DEBUG)
-async def check_if_skip_oras_push(request: OrasPublishSkipRequest, oras: Oras) -> CheckSkipResult:
+@rule(desc="Checks whether publishing an `oci_artifact` target is skipped.", level=LogLevel.DEBUG)
+async def check_if_skip_oras_publish(request: OrasPublishSkipRequest, oras: Oras) -> CheckSkipResult:
     """Skips both packaging and publishing when nothing would be pushed, and says why."""
+    field_set = request.publish_fs
     if oras.skip:
         reason = f"(by `[{Oras.options_scope}].skip = True`)"
-    elif request.publish_fs.skip_oras.value:
-        reason = f"(by `{request.publish_fs.skip_oras.alias}` on {request.address})"
-    elif not request.publish_fs.oci_repositories.value:
-        reason = f"(no `{request.publish_fs.oci_repositories.alias}` specified for {request.address})"
+    elif field_set.skip_oras.value:
+        reason = f"(by `{field_set.skip_oras.alias}` on {request.address})"
+    elif not field_set.oci_repository.value:
+        reason = f"(no `{field_set.oci_repository.alias}` specified for {request.address})"
+    elif not oras.registries().resolve(field_set.oci_registries.value or ()):
+        reason = (
+            f"(no `{field_set.oci_registries.alias}` resolved for {request.address}; set the field or mark an "
+            f"`[{Oras.options_scope}].registries` entry `default = true`)"
+        )
     else:
         return CheckSkipResult.no_skip()
-    name = (
-        request.package_fs.output_pex_filename()
-        if isinstance(request.package_fs, PexBinaryFieldSet)
-        else request.address.spec
-    )
-    return CheckSkipResult.skip(names=[name], description=reason, data=request.publish_fs.get_output_data())
+    return CheckSkipResult.skip(names=[request.address.spec], description=reason, data=field_set.get_output_data())
 
 
 @dataclass(frozen=True)
-class OrasPushRequest:
-    """One `oras push`: every `files` entry becomes a layer of the artifact at `repository`, tagged with `tags`."""
+class OCICopyRequest:
+    """One `oras cp`: the manifest at `manifest_digest` in the layout at `layout_path` goes to `registry`/`repository`."""
 
+    registry: str
     repository: str
     tags: tuple[str, ...]
-    files: tuple[str, ...]
+    layout_path: str
+    manifest_digest: str
     input_digest: Digest
-    artifact_type: str | None = None
+
+    @property
+    def source(self) -> str:
+        """The `<layout path>@<digest>` source reference; the digest form works for an untagged layout too."""
+        return f"{self.layout_path}@{self.manifest_digest}"
 
     @property
     def reference(self) -> str:
-        """The `<repository>[:<tag>[,<tag>...]]` argument of `oras push`; no tags pushes the artifact untagged."""
-        return f"{self.repository}:{','.join(self.tags)}" if self.tags else self.repository
+        """The `<registry>/<repository>[:<tag>[,<tag>...]]` destination reference."""
+        return oci_reference(f"{self.registry}/{self.repository}", self.tags)
 
 
-def construct_oras_push_argv(oras: Oras, exe: str, request: OrasPushRequest) -> tuple[str, ...]:
-    """Returns the full `oras push` command line for `request`, with `[oras].args` after the plugin's own flags."""
-    argv: list[str] = [exe, "push"]
-    if request.artifact_type:
-        argv.extend(["--artifact-type", request.artifact_type])
+def construct_oras_cp_argv(oras: Oras, request: OCICopyRequest, registry_config: str | None) -> tuple[str, ...]:
+    """The `oras cp` arguments (after the binary) for `request`, with `[oras].args` after the plugin's own flags."""
+    argv: list[str] = ["cp", "--from-oci-layout"]
+    if registry_config:
+        argv.extend(["--to-registry-config", registry_config])
     argv.extend(oras.args)
-    argv.append(request.reference)
-    # `oras` parses `<file>:<media type>`, so a path containing `:` needs a trailing `:` to keep the default type.
-    argv.extend(f"{file}:" if ":" in file else file for file in request.files)
+    argv.extend([request.source, request.reference])
     return tuple(argv)
 
 
-@rule(desc="Set up an `oras push` process", level=LogLevel.DEBUG)
-async def setup_oras_push_process(request: OrasPushRequest, oras: Oras, platform: Platform) -> Process:
-    downloaded_oras, env = await concurrently(
-        download_external_tool(oras.get_request(platform)),
-        environment_vars_subset(
-            EnvironmentVarsRequest([*ORAS_BASE_ENV_VAR_NAMES, *oras.extra_env_vars]), **implicitly()
+@rule(desc="Set up an `oras cp` process", level=LogLevel.DEBUG)
+async def setup_oras_cp_process(request: OCICopyRequest, oras: Oras, build_root: BuildRoot) -> Process:
+    registry_config = os.path.join(build_root.path, oras.config) if oras.config else None
+    return await setup_oras_process(
+        OrasProcessRequest(
+            argv=construct_oras_cp_argv(oras, request, registry_config),
+            description=f"Copy OCI artifact {request.source} to {request.reference} with `oras`",
+            input_digest=request.input_digest,
+            # Publishing must run every time: the engine asserts this scope for non-interactive publish processes.
+            cache_scope=ProcessCacheScope.PER_SESSION,
+            with_registry_env=True,
         ),
-    )
-    return Process(
-        argv=construct_oras_push_argv(
-            oras, os.path.normpath(os.path.join(ORAS_INPUT_DIR, downloaded_oras.exe)), request
-        ),
-        input_digest=request.input_digest,
-        immutable_input_digests={ORAS_INPUT_DIR: downloaded_oras.digest},
-        env=env,
-        description=f"Push {pluralize(len(request.files), 'file')} to {request.reference} with `oras`",
-        level=LogLevel.DEBUG,
-        # Publishing must run every time: the engine asserts this scope for non-interactive publish processes.
-        cache_scope=ProcessCacheScope.PER_SESSION,
+        **implicitly(),
     )
 
 
-@rule(
-    desc="Uses `oras` to wrap PEX artifacts as an OCI artifact and push to the configured OCI registry.",
-    level=LogLevel.DEBUG,
-)
-async def publish_pex_as_oci_artifact(request: OrasPublishPexRequest) -> PublishProcesses:
-    """One interactive `oras push` per repository, each pushing every artifact `pants package` built."""
-    files = tuple(artifact.relpath for pkg in request.packages for artifact in pkg.artifacts if artifact.relpath)
-    if not files:
+@rule(desc="Copies the packaged OCI artifact to every configured OCI registry with `oras`.", level=LogLevel.DEBUG)
+async def publish_oci_artifact(request: OCIPublishRequest, oras: Oras) -> PublishProcesses:
+    """One interactive `oras cp` per registry and packaged layout, tagging the artifact with every `oci_tags` entry."""
+    field_set = request.field_set
+    layout_paths = tuple(
+        artifact.relpath for package in request.packages for artifact in package.artifacts if artifact.relpath
+    )
+    registries = oras.registries().resolve(field_set.oci_registries.value or ())
+    repository = field_set.oci_repository.value
+    if not layout_paths or not registries or not repository:
         return PublishProcesses()
 
-    input_digest = await merge_digests(MergeDigests(pkg.digest for pkg in request.packages))
-    field_set = request.field_set
-    push_requests = tuple(
-        OrasPushRequest(
+    input_digest = await merge_digests(MergeDigests(package.digest for package in request.packages))
+    manifests = await concurrently(
+        read_oci_layout_manifest(OCILayoutRequest(input_digest, layout_path)) for layout_path in layout_paths
+    )
+    copy_requests = tuple(
+        OCICopyRequest(
+            registry=registry.address,
             repository=repository,
             tags=field_set.oci_tags.value or (),
-            files=files,
+            layout_path=layout_path,
+            manifest_digest=manifest.digest,
             input_digest=input_digest,
-            artifact_type=field_set.oci_media_type.value,
         )
-        for repository in field_set.oci_repositories.value or ()
+        for layout_path, manifest in zip(layout_paths, manifests, strict=True)
+        for registry in registries
     )
     processes = await concurrently(
-        setup_oras_push_process(push_request, **implicitly()) for push_request in push_requests
+        setup_oras_cp_process(copy_request, **implicitly()) for copy_request in copy_requests
     )
     return PublishProcesses(
         PublishPackages(
-            names=files,
+            names=(copy_request.layout_path,),
             process=InteractiveProcess.from_process(process),
-            description=push_request.reference,
-            data=PublishOutputData({"repository": push_request.repository, "tags": push_request.tags}),
+            description=copy_request.reference,
+            data=PublishOutputData(
+                {
+                    "registry": copy_request.registry,
+                    "repository": copy_request.repository,
+                    "tags": copy_request.tags,
+                    "digest": copy_request.manifest_digest,
+                }
+            ),
         )
-        for push_request, process in zip(push_requests, processes, strict=True)
+        for copy_request, process in zip(copy_requests, processes, strict=True)
     )
 
 
 def rules() -> CollectedRules:
     """Returns the `publish`-goal-specific rules for the `oras` pants plugin."""
-    return (*collect_rules(), *OrasPublishPexFieldSet.rules(), UnionRule(CheckSkipRequest, OrasPublishSkipRequest))
+    return (*collect_rules(), *OCIPublishFieldSet.rules(), UnionRule(CheckSkipRequest, OrasPublishSkipRequest))
