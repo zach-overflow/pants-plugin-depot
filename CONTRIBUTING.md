@@ -16,16 +16,22 @@ Each plugin is a separate Python distribution in its own directory under the top
 ```
 provides/
   <plugin-name>/
-    BUILD            # the `plugin-whl` python_distribution
+    BUILD            # `plugin_wheel()`: the `plugin-whl` python_distribution
     pyproject.toml   # packaging metadata and runtime dependencies of this plugin (the version comes from git tags)
     README.md
     CHANGELOG.md     # written by `cog bump`
     src/<root_module>/
+      BUILD          # `plugin_root_sources()`: python_sources, py.typed and the scm_version target
       version.py     # generated from the plugin's git tags at build time; never committed
     tests/<root_module>_tests/
 ```
 
 Every plugin MUST live in `provides/<plugin-name>/`. Everything outside `provides/` is shared repo tooling.
+
+The two `BUILD` files of a plugin call macros from `etc/pants-macros/_internal_pants_macros.py`, the
+[BUILD file prelude](https://www.pantsbuild.org/stable/docs/writing-plugins/macros). The macros derive the
+plugin name and root module from the `BUILD` file's directory. `pants plugin_wheel --help` and
+`pants plugin_root_sources --help` document them; `pants --tag=from-macro list ::` lists what they generate.
 
 The root `pyproject.toml` holds only the repo-wide tool configuration (ruff, pytest, ty).
 
@@ -135,11 +141,11 @@ part. A commit that touches two plugins bumps both. A commit that touches only r
 1. Create `provides/<plugin-name>/` following the layout above. Copy `provides/ty-pants-plugin/BUILD`,
    `provides/ty-pants-plugin/src/ty_pants_plugin/BUILD` and `provides/ty-pants-plugin/pyproject.toml` as a
    starting point. Do not set a version: keep `dynamic = ["version"]` and
-   `[tool.setuptools] dynamic.version = { attr = "<root_module>.version.__version__" }`, and keep the
-   `scm_version` target with `tag_prefix="<plugin-name>-v"` in `src/<root_module>/BUILD`, depended on by
-   both `python_sources` and `plugin-whl`.
-2. Keep the distribution target named `plugin-whl`. The Publish workflow builds
-   `provides/<plugin-name>:plugin-whl`.
+   `[tool.setuptools] dynamic.version = { attr = "<root_module>.version.__version__" }`. The `scm_version`
+   target with `tag_prefix="<plugin-name>-v"` comes from `plugin_root_sources()`.
+2. Keep the distribution target named `plugin-whl`, as `plugin_wheel()` does. The Publish workflow builds
+   `provides/<plugin-name>:plugin-whl`. The wheel packages everything reachable from the root module; pass
+   subpackages nothing imports (and other extra targets) via `plugin_wheel(extra_dependencies=[...])`.
 3. Register the plugin in `cog.toml`: add `[monorepo.packages.<plugin-name>]` with
    `path = "provides/<plugin-name>"`, and add `<plugin-name>` to `scopes`. The package name MUST equal the
    directory name under `provides/`.

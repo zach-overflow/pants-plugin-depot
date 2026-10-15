@@ -25,6 +25,8 @@ pythonpath = [
   "%(buildroot)s/provides/typos-pants-plugin/src",
   "%(buildroot)s/provides/vcs-versioning-pants-plugin/src",
 ]
+# https://www.pantsbuild.org/stable/docs/writing-plugins/macros
+build_file_prelude_globs = ["etc/pants-macros/_internal_pants_macros.py"]
 build_patterns = ["BUILD", "BUILD.*"]
 colors = true
 pants_ignore = [".*/", "/dist/", "__pycache__", "!.github/"]
@@ -33,8 +35,9 @@ pants_ignore = [".*/", "/dist/", "__pycache__", "!.github/"]
 dependents = "transitive"
 
 [source]
-# Each plugin lives in `provides/<plugin-name>/` with its own `src/` and `tests/` roots.
-root_patterns = ["/provides/*/src", "/provides/*/tests"]
+# Each plugin lives in `provides/<plugin-name>/` with its own `src/` and `tests/` roots. `etc/pants-macros` holds the
+# BUILD file prelude.
+root_patterns = ["/provides/*/src", "/provides/*/tests", "/etc/pants-macros"]
 
 [tailor]
 build_file_name = "BUILD"
