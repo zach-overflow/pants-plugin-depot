@@ -2,6 +2,18 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [oras-pants-plugin-v0.3.0](https://github.com/zach-overflow/pants-plugin-depot/compare/a798d7e578c70c35f324632dc5c70ad037cf4905..oras-pants-plugin-v0.3.0) - 2026-10-16
+
+#### Features
+
+- Support `vcs_version` injection to `oci_tags` + dogfood `oci_artifact` publishing (#28) - ([da545df](https://github.com/zach-overflow/pants-plugin-depot/commit/da545dfd8231b7cda7ef4604342c5a2384a65296)) - [@zach-overflow](https://github.com/zach-overflow)
+
+#### Bug Fixes
+
+- Simplify install instructions and add plugin entrypoints (#26) - ([a798d7e](https://github.com/zach-overflow/pants-plugin-depot/commit/a798d7e578c70c35f324632dc5c70ad037cf4905)) - [@zach-overflow](https://github.com/zach-overflow)
+
+- - -
+
 ## [oras-pants-plugin-v0.2.0](https://github.com/zach-overflow/pants-plugin-depot/compare/3ad8dd698e3627c2f42b9ca40b104718e80fa84f..oras-pants-plugin-v0.2.0) - 2026-10-15
 
 #### Features
