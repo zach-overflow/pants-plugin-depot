@@ -39,6 +39,8 @@ urls.Changelog = """\
   https://github.com/zach-overflow/pants-plugin-depot/blob/main/provides/actionlint-pants-plugin/CHANGELOG.md\
   """
 urls.Repository = "https://github.com/zach-overflow/pants-plugin-depot"
+entry-points."pantsbuild.plugin".rules = "actionlint_pants_plugin.register:rules"
+entry-points."pantsbuild.plugin".target_types = "actionlint_pants_plugin.register:target_types"
 
 [tool.setuptools]
 packages.find.where = [ "src" ]

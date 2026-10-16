@@ -35,6 +35,7 @@ dependencies = [ "pants-plugin-developer-utils>=0.1.0" ]
 urls."Bug Tracker" = "https://github.com/zach-overflow/pants-plugin-depot/issues"
 urls.Changelog = "https://github.com/zach-overflow/pants-plugin-depot/blob/main/provides/ty-pants-plugin/CHANGELOG.md"
 urls.Repository = "https://github.com/zach-overflow/pants-plugin-depot"
+entry-points."pantsbuild.plugin".rules = "ty_pants_plugin.register:rules"
 
 [tool.setuptools]
 packages.find.where = [ "src" ]

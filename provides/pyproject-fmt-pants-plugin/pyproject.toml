@@ -37,6 +37,7 @@ urls.Changelog = """\
   https://github.com/zach-overflow/pants-plugin-depot/blob/main/provides/pyproject-fmt-pants-plugin/CHANGELOG.md\
   """
 urls.Repository = "https://github.com/zach-overflow/pants-plugin-depot"
+entry-points."pantsbuild.plugin".rules = "pyproject_fmt_pants_plugin.register:rules"
 
 [tool.setuptools]
 packages.find.where = [ "src" ]

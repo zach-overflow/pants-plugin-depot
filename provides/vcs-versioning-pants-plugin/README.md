@@ -12,15 +12,14 @@ or artifact that can read a generated file.
 
 ## Installation
 
-Add the plugin to `pants.toml` and enable its backend:
+Add the plugin to `pants.toml`:
 
 ```toml
 [GLOBAL]
 plugins = ["vcs-versioning-pants-plugin==<version>"]
-backend_packages.add = ["vcs_versioning_pants_plugin"]
 ```
 
-The backend does not depend on `pants.backend.experimental.python` and coexists with it.
+The plugin does not depend on `pants.backend.experimental.python` and coexists with it.
 
 ## Usage
 

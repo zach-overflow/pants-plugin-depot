@@ -37,6 +37,7 @@ urls.Changelog = """\
   https://github.com/zach-overflow/pants-plugin-depot/blob/main/provides/typos-pants-plugin/CHANGELOG.md\
   """
 urls.Repository = "https://github.com/zach-overflow/pants-plugin-depot"
+entry-points."pantsbuild.plugin".rules = "typos_pants_plugin.register:rules"
 
 [tool.setuptools]
 packages.find.where = [ "src" ]

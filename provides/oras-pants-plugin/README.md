@@ -7,12 +7,11 @@ Docker Hub, Artifact Registry, ECR, ACR, Harbor, a local `registry:2`, and so on
 
 ## Installation
 
-Add the plugin to `pants.toml` and enable its backend:
+Add the plugin to `pants.toml`:
 
 ```toml
 [GLOBAL]
 plugins = ["oras-pants-plugin==<version>"]
-backend_packages.add = ["pants.backend.python", "oras_pants_plugin"]
 
 [oras.registries.ghcr]
 address = "ghcr.io/my-org"

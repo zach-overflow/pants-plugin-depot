@@ -6,13 +6,11 @@ runner labels, and the shell scripts in `run:` steps.
 
 ## Installation
 
-Add the plugin to `pants.toml` and enable its backend. Pants ignores dot-directories by default, so `.github/`
-MUST be made visible too:
+Add the plugin to `pants.toml`. Pants ignores dot-directories by default, so `.github/` MUST be made visible too:
 
 ```toml
 [GLOBAL]
 plugins = ["actionlint-pants-plugin==<version>"]
-backend_packages.add = ["actionlint_pants_plugin"]
 pants_ignore.add = ["!.github/"]
 ```
 

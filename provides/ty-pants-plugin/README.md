@@ -5,12 +5,11 @@ A [Pantsbuild](https://www.pantsbuild.org/) plugin for type checking Python code
 
 ## Installation
 
-Add the plugin to `pants.toml` and enable its backend:
+Add the plugin to `pants.toml`:
 
 ```toml
 [GLOBAL]
 plugins = ["ty-pants-plugin==<version>"]
-backend_packages.add = ["ty_pants_plugin"]
 ```
 
 Then run `ty` through the `check` goal:

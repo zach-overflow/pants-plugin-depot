@@ -42,6 +42,8 @@ dependencies = [ "pants-plugin-developer-utils>=0.1.0" ]
 urls."Bug Tracker" = "https://github.com/zach-overflow/pants-plugin-depot/issues"
 urls.Changelog = "https://github.com/zach-overflow/pants-plugin-depot/blob/main/provides/oras-pants-plugin/CHANGELOG.md"
 urls.Repository = "https://github.com/zach-overflow/pants-plugin-depot"
+entry-points."pantsbuild.plugin".rules = "oras_pants_plugin.register:rules"
+entry-points."pantsbuild.plugin".target_types = "oras_pants_plugin.register:target_types"
 
 [tool.setuptools]
 packages.find.where = [ "src" ]
