@@ -5,12 +5,11 @@ A [Pantsbuild](https://www.pantsbuild.org/) plugin for formatting `pyproject.tom
 
 ## Installation
 
-Add the plugin to `pants.toml` and enable its backend:
+Add the plugin to `pants.toml`:
 
 ```toml
 [GLOBAL]
 plugins = ["pyproject-fmt-pants-plugin==<version>"]
-backend_packages.add = ["pyproject_fmt_pants_plugin"]
 ```
 
 Then run `pyproject-fmt` through the `fmt` and `lint` goals:

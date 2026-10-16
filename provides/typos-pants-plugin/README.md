@@ -5,12 +5,11 @@ A [Pantsbuild](https://www.pantsbuild.org/) plugin that checks and corrects spel
 
 ## Installation
 
-Add the plugin to `pants.toml` and enable its backend:
+Add the plugin to `pants.toml`:
 
 ```toml
 [GLOBAL]
 plugins = ["typos-pants-plugin==<version>"]
-backend_packages.add = ["typos_pants_plugin"]
 ```
 
 Then run `typos` through the `lint` and `fix` goals:

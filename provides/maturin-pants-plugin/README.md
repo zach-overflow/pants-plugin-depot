@@ -8,12 +8,12 @@ A [Pantsbuild](https://www.pantsbuild.org/) plugin for building and publishing R
 
 ## Installation
 
-Add the plugin to `pants.toml` and enable its backend. The plugin needs the Python backend too:
+Add the plugin to `pants.toml`. The plugin needs the Python backend too:
 
 ```toml
 [GLOBAL]
 plugins = ["maturin-pants-plugin==<version>"]
-backend_packages.add = ["pants.backend.python", "maturin_pants_plugin"]
+backend_packages.add = ["pants.backend.python"]
 ```
 
 `cargo`, `rustc` and the interpreters listed in `[maturin].interpreter` MUST be on the `PATH` of the shell that runs
