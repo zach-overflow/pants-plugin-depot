@@ -40,7 +40,7 @@ class PyprojectFmtResult:
     """The formatted `pyproject.toml` files."""
 
 
-def common_partition_pyproject_toml_inputs(skip: bool, files: Iterable[str]) -> Partitions[str, Any]:
+def common_partition_pyproject_toml_inputs(*, skip: bool, files: Iterable[str]) -> Partitions[str, Any]:
     """Helper for partitioning the subject pyproject.toml files, regardless of goal being invoked."""
     files = tuple(files)
     if skip or not files:

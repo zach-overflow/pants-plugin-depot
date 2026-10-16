@@ -31,6 +31,7 @@ class MaturinWheelSourcesField(MultipleSourcesField):
 class MaturinManifestField(StringField, AsyncFieldMixin):
     """
     Base class of the fields naming the crate's `Cargo.toml` and the wheel's `pyproject.toml`.
+
     A plain string rather than a `SingleSourceField`: `pants --changed-since` only consults a target's first
     `SourcesField`, which must stay `sources` so that edits to rust files mark the target as changed.
     `AsyncFieldMixin` keeps the owning address around, like `OutputPathField` does.
@@ -137,4 +138,4 @@ class MaturinWheelTarget(Target):
 
 
 def target_types() -> CollectedTargetTypes:
-    return tuple([MaturinWheelTarget])
+    return (MaturinWheelTarget,)

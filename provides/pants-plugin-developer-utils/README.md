@@ -76,8 +76,7 @@ from your_plugin.goals.package import YourFieldSet
 @pytest.fixture
 def your_rule_runner(rule_runner_factory: RuleRunnerFactory) -> RuleRunner:
     return rule_runner_factory(
-        rules=[*your_rules(), QueryRule(BuiltPackage, [YourFieldSet])],
-        target_types=[FileTarget],
+        rules=[*your_rules(), QueryRule(BuiltPackage, [YourFieldSet])], target_types=[FileTarget]
     )
 ```
 

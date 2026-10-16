@@ -75,7 +75,7 @@ oci_artifact(
     packages=[":app"],
     oci_repository="app",
     oci_tags=["latest"],
-    oci_tag_files=[":version"],   # + `1.2.0` on a checkout of the `app-v1.2.0` tag, `1.2.1.dev3` after it
+    oci_tag_files=[":version"],  # + `1.2.0` on a checkout of the `app-v1.2.0` tag, `1.2.1.dev3` after it
 )
 ```
 

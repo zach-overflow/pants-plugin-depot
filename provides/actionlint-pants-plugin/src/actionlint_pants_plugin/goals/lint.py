@@ -3,7 +3,7 @@
 import os.path
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any, ClassVar, Final
 
 from pants.backend.shell.lint.shellcheck.subsystem import Shellcheck
 from pants.core.goals.lint import LintResult, LintTargetsRequest
@@ -18,7 +18,7 @@ from pants.engine.intrinsics import create_digest, execute_process, merge_digest
 from pants.engine.platform import Platform
 from pants.engine.process import Process
 from pants.engine.rules import collect_rules, concurrently, implicitly, rule
-from pants.engine.target import FieldSet, SourcesField, Target, TransitiveTargetsRequest
+from pants.engine.target import Field, FieldSet, SourcesField, Target, TransitiveTargetsRequest
 from pants.option.global_options import GlobalOptions
 from pants.util.logging import LogLevel
 from pants.util.strutil import pluralize
@@ -51,7 +51,7 @@ references. Every sandbox therefore gets an empty `.git` directory at its root.
 class ActionlintFieldSet(FieldSet):
     """Fields required for a target to be linted by `actionlint`."""
 
-    required_fields = (GitHubWorkflowSourceField,)
+    required_fields: ClassVar[tuple[type[Field], ...]] = (GitHubWorkflowSourceField,)
 
     source: GitHubWorkflowSourceField
     dependencies: GitHubWorkflowDependenciesField

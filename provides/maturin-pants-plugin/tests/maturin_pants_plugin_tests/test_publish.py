@@ -76,7 +76,7 @@ def test_field_set() -> None:
     ],
 )
 def test_check_if_skip_maturin_upload_skips(
-    skip_option: bool, target_kwargs: dict[str, Any], expected_reason: str
+    *, skip_option: bool, target_kwargs: dict[str, Any], expected_reason: str
 ) -> None:
     actual = run_rule_with_mocks(
         check_if_skip_maturin_upload, rule_args=[_check_skip_request(target_kwargs), make_maturin(skip=skip_option)]

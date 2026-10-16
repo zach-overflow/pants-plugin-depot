@@ -106,14 +106,18 @@ def test_field_set() -> None:
         (
             {},
             {"oci_repository": _REPOSITORY},
-            f"(no `oci_registries` resolved for {APP_ADDRESS}; set the field or mark an `[oras].registries` entry "
-            "`default = true`)",
+            (
+                f"(no `oci_registries` resolved for {APP_ADDRESS}; set the field or mark an `[oras].registries` entry "
+                "`default = true`)"
+            ),
         ),
         (
             {},
             {"oci_repository": _REPOSITORY, "oci_registries": []},
-            f"(no `oci_registries` resolved for {APP_ADDRESS}; set the field or mark an `[oras].registries` entry "
-            "`default = true`)",
+            (
+                f"(no `oci_registries` resolved for {APP_ADDRESS}; set the field or mark an `[oras].registries` entry "
+                "`default = true`)"
+            ),
         ),
     ],
 )
@@ -341,8 +345,10 @@ def test_default_registries_reach_the_skip_rule_through_the_options(oras_rule_ru
 
 def test_oras_cp_from_the_packaged_layout_into_an_oci_layout(oras_rule_runner: RuleRunner) -> None:
     """
-    Packages a real layout, then runs the real `oras cp` the plugin builds. `--to-oci-layout` in `[oras].args`
-    turns the registry reference into a directory in the sandbox, which is captured and inspected.
+    Packages a real layout, then runs the real `oras cp` the plugin builds.
+
+    `--to-oci-layout` in `[oras].args` turns the registry reference into a directory in the sandbox, which is
+    captured and inspected.
     """
     oras_rule_runner.set_options(
         ["--oras-args=['--to-oci-layout']", "--oras-config=auth/config.json"], env_inherit={"PATH", "HOME"}

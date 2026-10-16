@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Any, ClassVar, Protocol
 
 import pytest
 from pants.core.goals import package as core_package
@@ -13,7 +13,7 @@ from pants.engine.fs import CreateDigest, Digest, DigestContents, FileContent, S
 from pants.engine.intrinsics import create_digest
 from pants.engine.process import Process, ProcessResult
 from pants.engine.rules import collect_rules, rule
-from pants.engine.target import COMMON_TARGET_FIELDS, StringField, Target
+from pants.engine.target import COMMON_TARGET_FIELDS, Field, StringField, Target
 from pants.engine.unions import UnionRule
 from pants.testutil.option_util import create_subsystem
 from pants.testutil.rule_runner import QueryRule, RuleRunner
@@ -27,7 +27,7 @@ from oras_pants_plugin.subsystem import Oras
 from oras_pants_plugin.target_types import OCIArtifact
 from pants_plugin_developer_utils.testing_utils import (
     RuleRunnerFactory,
-    rule_runner_factory,  # noqa: F401
+    rule_runner_factory,  # ruff: ignore[unused-import]
 )
 
 APP_DIR = "src/app"
@@ -56,7 +56,7 @@ class FakePackageTarget(Target):
 
 @dataclass(frozen=True)
 class FakePackageFieldSet(PackageFieldSet):
-    required_fields = (FakePackageContentField,)
+    required_fields: ClassVar[tuple[type[Field], ...]] = (FakePackageContentField,)
 
     content: FakePackageContentField
     output_path: OutputPathField
@@ -100,7 +100,7 @@ def oras_factory() -> OrasFactory:
 
 
 @pytest.fixture(scope="function")
-def oras_rule_runner(rule_runner_factory: RuleRunnerFactory) -> RuleRunner:  # noqa: F811
+def oras_rule_runner(rule_runner_factory: RuleRunnerFactory) -> RuleRunner:  # ruff: ignore[redefined-while-unused]
     """Integration `RuleRunner`: requesting a `BuiltPackage` or `PublishProcesses` downloads the real `oras` (network)."""
     return rule_runner_factory(
         rules=[

@@ -1,14 +1,17 @@
 """
-Implements the `publish` goal for `oci_artifact` targets: the OCI image layout `pants package` built is copied to each
-registry with `oras cp --from-oci-layout`, so the published artifact keeps the packaged digest.
-See also:
+Implements the `publish` goal for `oci_artifact` targets.
+
+The OCI image layout `pants package` built is copied to each registry with `oras cp --from-oci-layout`, so the
+published artifact keeps the packaged digest.
+
+See Also:
     https://www.pantsbuild.org/stable/docs/writing-plugins/common-plugin-tasks/add-a-publisher
     https://oras.land/docs/commands/oras_cp
 """
 
 import os
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from pants.base.build_root import BuildRoot
 from pants.core.goals.package import PackageFieldSet
@@ -53,7 +56,7 @@ class OCIPublishRequest(PublishRequest["OCIPublishFieldSet"]):
 class OCIPublishFieldSet(PublishFieldSet[OCIPublishRequest], OCIArtifactFieldSet):
     """The `PublishFieldSet` for `oci_artifact` targets."""
 
-    publish_request_type = OCIPublishRequest
+    publish_request_type: ClassVar[type[OCIPublishRequest]] = OCIPublishRequest
 
     oci_registries: OCIRegistriesField
     oci_repository: OCIRepositoryField

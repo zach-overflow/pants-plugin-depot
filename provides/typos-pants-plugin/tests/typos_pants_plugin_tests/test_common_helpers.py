@@ -39,6 +39,7 @@ from typos_pants_plugin_tests.conftest import TyposFactory, read_digest
     ],
 )
 def test_partition_typos_inputs(
+    *,
     skip: bool,
     glob_pattern: list[str],
     files: Iterable[str],

@@ -1,3 +1,5 @@
+import re
+
 import pytest
 
 from oras_pants_plugin.constants import ALL_DEFAULT_REGISTRIES
@@ -55,7 +57,7 @@ def test_from_dict_rejects_bad_entries(entry: dict[str, object], match: str) -> 
 
 
 def test_from_dict_rejects_duplicate_addresses() -> None:
-    with pytest.raises(OCIRegistryAddressCollisionError, match="`ghcr.io` for aliases `a` and `b`"):
+    with pytest.raises(OCIRegistryAddressCollisionError, match=re.escape("`ghcr.io` for aliases `a` and `b`")):
         OCIRegistries.from_dict({"a": {"address": "ghcr.io"}, "b": {"address": "ghcr.io"}})
 
 

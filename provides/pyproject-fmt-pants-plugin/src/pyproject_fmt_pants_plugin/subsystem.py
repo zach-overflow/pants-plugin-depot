@@ -71,12 +71,12 @@ class PyprojectFmt(PythonToolBase):
     default_interpreter_constraints: ClassVar[Sequence[str]] = ["CPython>=3.14,<3.15"]
     default_requirements = ("pyproject-fmt>=2.29.4,<3",)
     default_main = ConsoleScript("pyproject-fmt")
-    # TODO: package this in the wheel and adjust path
     default_lockfile_resource = ("pyproject_fmt_pants_plugin.lockfile_resource", "pyproject_fmt_lockfile.json")
 
     def config_request(self) -> ConfigFilesRequest:
         """
         Finds the `pyproject.toml` file **which configures the shared `pyproject-fmt` settings**.
+
         NOTE: This method does NOT limit the `pyproject-fmt` run to just the discovered config here.
         Will run the underlying lint and fmt goal against all `pyproject.toml` files in the repo.
         """

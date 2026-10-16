@@ -46,7 +46,7 @@ async def run_typos_fix(request: TyposFixRequest.Batch, keep_sandboxes: KeepSand
     result = await execute_process(process, **implicitly())
     # `typos --write-changes` writes every unambiguous correction, then still exits 2 if ambiguous typos remain
     # for `lint` to report. Any other failure is a usage or config error that MUST abort the goal.
-    if result.exit_code not in (0, TYPOS_FOUND_EXIT_CODE):
+    if result.exit_code not in {0, TYPOS_FOUND_EXIT_CODE}:
         raise ProcessExecutionFailure.from_result(result, process.description, keep_sandboxes)
     return await FixResult.create(request, result)
 

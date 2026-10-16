@@ -4,7 +4,7 @@ from pants.testutil.rule_runner import QueryRule, RuleRunner
 
 from pants_plugin_developer_utils.testing_utils import (
     RuleRunnerFactory,
-    rule_runner_factory,  # noqa: F401
+    rule_runner_factory,  # ruff: ignore[unused-import]
 )
 from vcs_versioning_pants_plugin import module_mapper
 from vcs_versioning_pants_plugin.module_mapper import ScmVersionMappingMarker
@@ -16,7 +16,7 @@ TOOL_INTERPRETER_CONSTRAINTS = ("CPython==3.14.*",)
 
 
 @pytest.fixture(scope="function")
-def scm_rule_runner(rule_runner_factory: RuleRunnerFactory) -> RuleRunner:  # noqa: F811
+def scm_rule_runner(rule_runner_factory: RuleRunnerFactory) -> RuleRunner:  # ruff: ignore[redefined-while-unused]
     """Engine-backed runner for what needs neither git nor the network: option parsing and the module mapping."""
     rule_runner = rule_runner_factory(
         rules=[

@@ -79,7 +79,13 @@ def tag_lines(contents: DigestContents) -> tuple[str, ...]:
 
 @rule(desc="Resolve the tags of an `oci_artifact` target", level=LogLevel.DEBUG)
 async def resolve_oci_artifact_tags(request: OCIArtifactTagsRequest) -> OCIArtifactTags:
-    """`oci_tags`, then every non-blank line of the `oci_tag_files` files (code generators run), without duplicates."""
+    """
+    `oci_tags`, then every non-blank line of the `oci_tag_files` files (code generators run), without duplicates.
+
+    Raises:
+        InvalidFieldException: If an `oci_tag_files` target has no `file` or `resource` sources, or its files are
+            not UTF-8 text, or they hold no tags.
+    """
     tags: dict[str, None] = dict.fromkeys(request.oci_tags.value or ())
     tag_files = request.oci_tag_files
     if not tag_files.value:
@@ -99,16 +105,19 @@ async def resolve_oci_artifact_tags(request: OCIArtifactTagsRequest) -> OCIArtif
     for target, sources, digest_contents in zip(targets, hydrated_sources, contents, strict=True):
         listed = f"The `{tag_files.alias}` field of target {tag_files.address} lists {target.address}"
         if sources.sources_type is None:
-            raise InvalidFieldException(
+            msg = (
                 f"{listed}, a `{target.alias}` target without `file` or `resource` sources. List `file`, `resource` "
                 "or code generator targets that produce them, such as `scm_version_file`."
             )
+            raise InvalidFieldException(msg)
         try:
             file_tags = tag_lines(digest_contents)
         except UnicodeDecodeError as e:
-            raise InvalidFieldException(f"{listed}, whose files are not UTF-8 text: {e}") from e
+            msg = f"{listed}, whose files are not UTF-8 text: {e}"
+            raise InvalidFieldException(msg) from e
         if not file_tags:
-            raise InvalidFieldException(f"{listed}, whose files hold no tags: a tag file needs a non-blank line.")
+            msg = f"{listed}, whose files hold no tags: a tag file needs a non-blank line."
+            raise InvalidFieldException(msg)
         tags.update(dict.fromkeys(file_tags))
     return OCIArtifactTags(tags)
 
@@ -167,13 +176,13 @@ async def read_oci_layout_manifest(request: OCILayoutRequest) -> OCILayoutManife
     index_digest = await digest_subset_to_digest(DigestSubset(request.digest, PathGlobs([index_path])))
     contents = await get_digest_contents(index_digest)
     if not contents:
-        raise ValueError(f"`{request.path}` is not an OCI image layout: it has no `{OCI_LAYOUT_INDEX_FILENAME}`.")
+        msg = f"`{request.path}` is not an OCI image layout: it has no `{OCI_LAYOUT_INDEX_FILENAME}`."
+        raise ValueError(msg)
     index = json.loads(contents[0].content)
     digests: set[str] = {str(manifest["digest"]) for manifest in index.get("manifests", ())}
     if len(digests) != 1:
-        raise ValueError(
-            f"Expected exactly one manifest in the OCI image layout `{request.path}`, found {sorted(digests)}."
-        )
+        msg = f"Expected exactly one manifest in the OCI image layout `{request.path}`, found {sorted(digests)}."
+        raise ValueError(msg)
     return OCILayoutManifest(digests.pop())
 
 

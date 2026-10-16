@@ -25,7 +25,7 @@ def rule_runner_factory() -> RuleRunnerFactory:
     """Fixture factory for generating a `pants.testutil.rule_runner.RuleRunner` instance based on the input params."""
 
     def _factory(rules: RuleRunnerCollectedRules, **kwargs: Unpack[RuleRunnerOptionalKwargs]) -> RuleRunner:
-        from pants.testutil.rule_runner import RuleRunner
+        from pants.testutil.rule_runner import RuleRunner  # ruff: ignore[import-outside-top-level]
 
         return RuleRunner(rules=rules, **kwargs)
 

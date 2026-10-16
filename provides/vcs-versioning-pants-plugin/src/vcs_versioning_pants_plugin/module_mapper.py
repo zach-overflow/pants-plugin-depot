@@ -44,9 +44,9 @@ async def map_scm_version_to_python_modules(
     scm_version_targets: AllScmVersionTargets, python_setup: PythonSetup, _: ScmVersionMappingMarker
 ) -> FirstPartyPythonMappingImpl:
     suffix = ".py"
-    targets = [tgt for tgt in scm_version_targets if cast(str, tgt[ScmVersionGenerateToField].value).endswith(suffix)]
+    targets = [tgt for tgt in scm_version_targets if cast("str", tgt[ScmVersionGenerateToField].value).endswith(suffix)]
     stripped_files = await concurrently(
-        strip_file_name(StrippedFileNameRequest(cast(str, tgt[ScmVersionGenerateToField].value))) for tgt in targets
+        strip_file_name(StrippedFileNameRequest(cast("str", tgt[ScmVersionGenerateToField].value))) for tgt in targets
     )
     resolves_to_modules_to_providers: defaultdict[ResolveName, defaultdict[str, list[ModuleProvider]]] = defaultdict(
         lambda: defaultdict(list)

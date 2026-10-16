@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from pants.core.goals.package import PackageFieldSet
 from pants.core.goals.publish import (
@@ -15,6 +15,7 @@ from pants.engine.fs import MergeDigests
 from pants.engine.intrinsics import merge_digests
 from pants.engine.process import InteractiveProcess, ProcessCacheScope
 from pants.engine.rules import collect_rules, concurrently, implicitly, rule
+from pants.engine.target import Field
 from pants.engine.unions import UnionRule
 from pants.util.logging import LogLevel
 
@@ -46,8 +47,13 @@ class MaturinPublishRequest(PublishRequest["MaturinPublishFieldSet"]):
 class MaturinPublishFieldSet(PublishFieldSet[MaturinPublishRequest], MaturinFieldSet):
     """`PublishFieldSet` subtype for the `maturin` pants plugin."""
 
-    publish_request_type = MaturinPublishRequest
-    required_fields = (MaturinWheelSourcesField, CargoTomlField, PyProjectTomlField, MaturinRepositoriesField)
+    publish_request_type: ClassVar[type[MaturinPublishRequest]] = MaturinPublishRequest
+    required_fields: ClassVar[tuple[type[Field], ...]] = (
+        MaturinWheelSourcesField,
+        CargoTomlField,
+        PyProjectTomlField,
+        MaturinRepositoriesField,
+    )
 
     repositories: MaturinRepositoriesField
     skip_maturin_upload: SkipMaturinUploadField

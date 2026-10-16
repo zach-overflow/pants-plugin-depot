@@ -26,7 +26,7 @@ class PyprojectFmtRequest(FmtFilesRequest):
 
 @rule(desc="Partitions the `pyproject.toml` input files for formatting.", level=LogLevel.DEBUG)
 async def partition_inputs(request: PyprojectFmtRequest.PartitionRequest, pyproject_fmt: PyprojectFmt) -> Partitions:
-    return common_partition_pyproject_toml_inputs(pyproject_fmt.skip, request.files)
+    return common_partition_pyproject_toml_inputs(skip=pyproject_fmt.skip, files=request.files)
 
 
 @rule(desc="Auto-formats all requested `pyproject.toml` files with `pyproject-fmt`", level=LogLevel.DEBUG)

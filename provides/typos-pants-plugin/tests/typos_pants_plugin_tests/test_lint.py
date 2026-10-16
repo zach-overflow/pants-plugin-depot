@@ -24,7 +24,7 @@ def test_passes_on_clean_files(typos_rule_runner: RuleRunner) -> None:
     [result] = run_lint(typos_rule_runner, ["clean.txt"])
 
     assert result.exit_code == 0, result.stdout + result.stderr
-    assert result.stdout == ""
+    assert not result.stdout
 
 
 def test_reports_ambiguous_typos_and_file_names(typos_rule_runner: RuleRunner) -> None:

@@ -1,6 +1,7 @@
 """
-Generates the version module of a `scm_version` target, or the version file of a `scm_version_file` target, by running
-vcs-versioning against the git worktree.
+Generates the version of an `scm_version` or `scm_version_file` target.
+
+The version module or file is rendered by running vcs-versioning against the git worktree.
 """
 
 import json
@@ -88,7 +89,12 @@ def render_vcs_versioning_config(target: Target) -> str:
 async def _generate_version_file(
     target: Target, vcs_versioning: VcsVersioning, local_environment_name: ChosenLocalEnvironmentName
 ) -> GeneratedSources:
-    """Runs vcs-versioning for `target` and renders its `template` into `generate_to`; shared by both generators."""
+    """
+    Runs vcs-versioning for `target` and renders its `template` into `generate_to`; shared by both generators.
+
+    Raises:
+        ScmVersioningError: If the build root is not inside a git worktree.
+    """
     # A MaybeGitWorktree is uncacheable, so this rule runs every time its result is needed. The process below
     # caches at session scope, so the result always reflects the current git state.
     maybe_git_worktree = await get_git_worktree(
@@ -137,8 +143,8 @@ async def _generate_version_file(
     )
     version = result.stdout.decode().strip()
     # Both fields always have a value, but `StringField.value` is typed `str | None`.
-    generate_to = cast(str, target[ScmVersionGenerateToField].value)
-    template = cast(str, target[ScmVersionTemplateField].value)
+    generate_to = cast("str", target[ScmVersionGenerateToField].value)
+    template = cast("str", target[ScmVersionTemplateField].value)
     output_snapshot = await digest_to_snapshot(
         **implicitly(CreateDigest([FileContent(generate_to, template.format(version=version).encode())]))
     )
