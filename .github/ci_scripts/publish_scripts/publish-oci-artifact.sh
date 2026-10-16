@@ -3,6 +3,9 @@
 set -euo pipefail
 
 output=dist/publish-oci-artifact.json
+# `pants publish` builds everything in its sandbox, so `dist/` does not exist on a fresh checkout, and
+# Pants writes `--publish-output` without creating its parent directory.
+mkdir -p "$(dirname "${output}")"
 pants publish "provides/${PACKAGE}:plugin-oci-artifact" --publish-output="${output}"
 jq . "${output}"
 # `[oras].allow_publish` is only true in pants.ci.toml; a skipped publish means it was not applied.
