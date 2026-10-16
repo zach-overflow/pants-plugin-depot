@@ -1,4 +1,7 @@
-"""Generates the version module of a `scm_version` target by running vcs-versioning against the git worktree."""
+"""
+Generates the version module of a `scm_version` target, or the version file of a `scm_version_file` target, by running
+vcs-versioning against the git worktree.
+"""
 
 import json
 from typing import TYPE_CHECKING, cast
@@ -6,6 +9,7 @@ from typing import TYPE_CHECKING, cast
 from pants.backend.python.subsystems.python_tool_base import get_lockfile_interpreter_constraints
 from pants.backend.python.target_types import PythonSourceField
 from pants.backend.python.util_rules.pex import PexRequest, VenvPexProcess, create_venv_pex
+from pants.core.target_types import FileSourceField
 from pants.engine.environment import ChosenLocalEnvironmentName, EnvironmentName
 from pants.engine.fs import CreateDigest, FileContent
 from pants.engine.internals.selectors import concurrently
@@ -21,6 +25,7 @@ from pants.vcs.git import GitWorktreeRequest, get_git_worktree
 from vcs_versioning_pants_plugin.subsystem import VcsVersioning
 from vcs_versioning_pants_plugin.target_types import (
     ScmVersionDummySourceField,
+    ScmVersionFileDummySourceField,
     ScmVersionGenerateToField,
     ScmVersionLocalSchemeField,
     ScmVersionTagPrefixField,
@@ -44,6 +49,13 @@ class GenerateScmVersionRequest(GenerateSourcesRequest):
 
     input = ScmVersionDummySourceField
     output = PythonSourceField
+
+
+class GenerateScmVersionFileRequest(GenerateSourcesRequest):
+    """Codegen request turning a `scm_version_file` target into a `file`-typed asset."""
+
+    input = ScmVersionFileDummySourceField
+    output = FileSourceField
 
 
 def _toml_string(value: str) -> str:
@@ -73,18 +85,15 @@ def render_vcs_versioning_config(target: Target) -> str:
     return "\n".join(lines) + "\n"
 
 
-@rule(desc="Generate a version module from git tags with vcs-versioning", level=LogLevel.DEBUG)
-async def generate_python_from_scm_version(
-    request: GenerateScmVersionRequest,
-    vcs_versioning: VcsVersioning,
-    local_environment_name: ChosenLocalEnvironmentName,
+async def _generate_version_file(
+    target: Target, vcs_versioning: VcsVersioning, local_environment_name: ChosenLocalEnvironmentName
 ) -> GeneratedSources:
+    """Runs vcs-versioning for `target` and renders its `template` into `generate_to`; shared by both generators."""
     # A MaybeGitWorktree is uncacheable, so this rule runs every time its result is needed. The process below
     # caches at session scope, so the result always reflects the current git state.
     maybe_git_worktree = await get_git_worktree(
         **implicitly({GitWorktreeRequest(): GitWorktreeRequest, local_environment_name.val: EnvironmentName})
     )
-    target = request.protocol_target
     if not maybe_git_worktree.git_worktree:
         raise ScmVersioningError(
             softwrap(
@@ -127,7 +136,7 @@ async def generate_python_from_scm_version(
         )
     )
     version = result.stdout.decode().strip()
-    # Both fields are required, but `StringField.value` is typed `str | None`.
+    # Both fields always have a value, but `StringField.value` is typed `str | None`.
     generate_to = cast(str, target[ScmVersionGenerateToField].value)
     template = cast(str, target[ScmVersionTemplateField].value)
     output_snapshot = await digest_to_snapshot(
@@ -136,5 +145,27 @@ async def generate_python_from_scm_version(
     return GeneratedSources(output_snapshot)
 
 
+@rule(desc="Generate a version module from git tags with vcs-versioning", level=LogLevel.DEBUG)
+async def generate_python_from_scm_version(
+    request: GenerateScmVersionRequest,
+    vcs_versioning: VcsVersioning,
+    local_environment_name: ChosenLocalEnvironmentName,
+) -> GeneratedSources:
+    return await _generate_version_file(request.protocol_target, vcs_versioning, local_environment_name)
+
+
+@rule(desc="Generate a version file from git tags with vcs-versioning", level=LogLevel.DEBUG)
+async def generate_file_from_scm_version(
+    request: GenerateScmVersionFileRequest,
+    vcs_versioning: VcsVersioning,
+    local_environment_name: ChosenLocalEnvironmentName,
+) -> GeneratedSources:
+    return await _generate_version_file(request.protocol_target, vcs_versioning, local_environment_name)
+
+
 def rules() -> CollectedRules:
-    return (*collect_rules(), UnionRule(GenerateSourcesRequest, GenerateScmVersionRequest))
+    return (
+        *collect_rules(),
+        UnionRule(GenerateSourcesRequest, GenerateScmVersionRequest),
+        UnionRule(GenerateSourcesRequest, GenerateScmVersionFileRequest),
+    )

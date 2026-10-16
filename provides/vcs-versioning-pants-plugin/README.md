@@ -63,9 +63,26 @@ python_distribution(
 `my-package-vX.Y.Z` tag. Code can also import the module at runtime (`from my_package.version import
 __version__`): dependency inference maps the generated module to its `scm_version` target.
 
+### A plain version file
+
+`scm_version_file` is the `file` counterpart of `scm_version`: it takes the same versioning fields, but generates
+a plain file that keeps its `generate_to` path (no source root is stripped), for anything that packages or reads
+files rather than Python modules: the `files` of an `archive`, a Docker build context, or a field such as the
+`oci_tag_files` of [`oras-pants-plugin`](https://pypi.org/project/oras-pants-plugin/)'s `oci_artifact`. Its
+`template` defaults to `"{version}\n"`.
+
+```python
+# BUILD
+scm_version_file(name="version-file", tag_prefix="my-package-v", generate_to="VERSION")
+archive(name="release", packages=[":my-package-whl"], files=[":version-file"], format="tar.gz")
+```
+
+Each target type has one code generator (Python module or file), so a consumer that hydrates Python and file
+sources together, as `pants test` does, never sees an ambiguous choice.
+
 ## How it works
 
-For every `scm_version` target Pants:
+For every `scm_version` and `scm_version_file` target Pants:
 
 1. Locates the git worktree of the build root.
 2. Writes a synthetic `pyproject.toml` holding only this target's fields into a sandbox. Any
@@ -105,6 +122,8 @@ arrived in vcs-versioning 2 (setuptools-scm 10).
 
 ## Target fields
 
+Both `scm_version` and `scm_version_file` take these fields.
+
 | Field            | Default                                | Purpose                                                                            |
 | :--------------- | :------------------------------------- | :--------------------------------------------------------------------------------- |
 | `tag_prefix`     | unset                                  | Literal prefix a tag must carry, e.g. `my-package-v`. Stripped before `tag_regex`. |
@@ -112,8 +131,8 @@ arrived in vcs-versioning 2 (setuptools-scm 10).
 | `version_scheme` | unset (`guess-next-dev`)               | vcs-versioning version scheme.                                                     |
 | `local_scheme`   | unset (`node-and-date`)                | vcs-versioning local scheme.                                                       |
 | `generate_to`    | required                               | Build-root-relative path of the generated file.                                    |
-| `template`       | required                               | Format string with a `{version}` placeholder.                                      |
-| `python_resolve` | `[python].default_resolve`             | Resolve the generated module belongs to, for dependency inference.                 |
+| `template`       | required (`"{version}\n"` for `scm_version_file`) | Format string with a `{version}` placeholder.                           |
+| `python_resolve` | `[python].default_resolve`             | `scm_version` only: resolve the generated module belongs to, for dependency inference. |
 
 ## Configuration
 

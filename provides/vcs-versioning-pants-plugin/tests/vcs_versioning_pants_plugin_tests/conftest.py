@@ -9,7 +9,7 @@ from pants_plugin_developer_utils.testing_utils import (
 from vcs_versioning_pants_plugin import module_mapper
 from vcs_versioning_pants_plugin.module_mapper import ScmVersionMappingMarker
 from vcs_versioning_pants_plugin.subsystem import VcsVersioning
-from vcs_versioning_pants_plugin.target_types import ScmVersionTarget
+from vcs_versioning_pants_plugin.target_types import ScmVersionFileTarget, ScmVersionTarget
 
 TOOL_INTERPRETER_CONSTRAINTS = ("CPython==3.14.*",)
 """The `[vcs-versioning].interpreter_constraints` that `scm_rule_runner` sets."""
@@ -25,7 +25,7 @@ def scm_rule_runner(rule_runner_factory: RuleRunnerFactory) -> RuleRunner:  # no
             QueryRule(FirstPartyPythonMappingImpl, [ScmVersionMappingMarker]),
             QueryRule(VcsVersioning, []),
         ],
-        target_types=[ScmVersionTarget],
+        target_types=[ScmVersionTarget, ScmVersionFileTarget],
     )
     rule_runner.set_options(
         [

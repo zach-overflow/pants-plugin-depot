@@ -39,6 +39,22 @@ class OCIArtifactPackagesField(SpecialCasedDependencies):
     )
 
 
+class OCIArtifactPlatformField(StringField):
+    """The platform `oras` records in the manifest's config (an `oras` experimental feature)."""
+
+    alias = "oci_artifact_platform"
+    help = help_text(
+        """
+        The platform of the artifact, in the `os[/arch][/variant][:os_version]` form `oras` expects, e.g.
+        `linux/amd64`. Passed to `oras push` as `--artifact-platform` when the artifact is packaged, which records
+        it in the manifest's config (`{"os": "linux", "architecture": "amd64"}`); `pants publish` copies the
+        manifest as is. Leave unset for a platform-independent artifact.
+
+        `oras` marks the flag experimental, see https://oras.land/docs/commands/oras_push#options
+        """
+    )
+
+
 class OCIArtifactTypeField(StringField):
     """The OCI `artifactType` of the manifest `oras` creates."""
 
@@ -60,7 +76,30 @@ class OCITagsField(StringSequenceField):
     help = help_text(
         """
         The tags of the OCI artifact, applied in the packaged OCI image layout and in every registry it is
-        published to. An empty list leaves the artifact untagged, addressable by its digest only.
+        published to. An empty list leaves the artifact untagged, addressable by its digest only; `oci_tag_files`
+        adds tags read from files.
+        """
+    )
+
+
+class OCITagFilesField(SpecialCasedDependencies):
+    """Targets whose files hold further tags, one per line, e.g. a generated version file."""
+
+    alias = "oci_tag_files"
+    help = help_text(
+        f"""
+        Addresses of targets whose files hold further tags for the artifact, appended to `oci_tags`: every
+        non-blank line of every file is one tag. Duplicates are dropped.
+
+        Any target with `file` or `resource` sources works, including code generators that produce them, such as
+        a `shell_command` with `output_files`, or the `scm_version_file` target of `vcs-versioning-pants-plugin`,
+        which turns the version derived from git tags into a tag:
+
+            scm_version_file(name="version", generate_to="src/app/VERSION")
+            oci_artifact(name="app-artifact", packages=[":app"], oci_tag_files=[":version"])
+
+        The files are hydrated, running any code generator, whenever the artifact is packaged or published with
+        `{bin_name()}`, so a generated tag reflects the current git state.
         """
     )
 
@@ -128,9 +167,11 @@ class OCIArtifact(Target):
     core_fields = (
         *COMMON_TARGET_FIELDS,
         OCIArtifactPackagesField,
+        OCIArtifactPlatformField,
         OutputPathField,
         OCIArtifactTypeField,
         OCITagsField,
+        OCITagFilesField,
         OCIRegistriesField,
         OCIRepositoryField,
         SkipOCIPublishField,

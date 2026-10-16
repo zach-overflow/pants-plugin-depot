@@ -56,9 +56,31 @@ manifest's `artifactType` is `oci_artifact_type`.
 `pants publish` packages the target the same way, then runs one `oras cp --from-oci-layout` per registry, in the
 foreground so `oras` can show progress. The copy addresses the layout's manifest by digest, so the published
 artifact has exactly the digest `pants package` reported. A target without `oci_repository`, that resolves to no
-registry, with `skip_oras=True`, or run with `[oras].skip = true` is skipped before it is packaged. Each copy is
-reported as published, failed or skipped like every other publisher; `--publish-output` writes the same as JSON,
-with the `registry`, `repository`, `tags` and `digest` of each copy.
+registry, with `skip_oras=True`, or run with `[oras].skip = true` or `[oras].allow_publish = false` is skipped
+before it is packaged. Each copy is reported as published, failed or skipped like every other publisher;
+`--publish-output` writes the same as JSON, with the `registry`, `repository`, `tags` and `digest` of each copy.
+
+### Tags from files
+
+`oci_tag_files` lists targets whose files hold further tags, one per line, appended to `oci_tags`. Any `file` or
+`resource` target works, and so does any code generator producing them, which is how a version derived from git
+becomes a tag: the [`vcs-versioning-pants-plugin`](https://pypi.org/project/vcs-versioning-pants-plugin/)'s
+`scm_version_file` target generates a one-line version file from the git tags at build time.
+
+```python
+scm_version_file(name="version", tag_prefix="app-v", generate_to="src/app/VERSION", local_scheme="no-local-version")
+
+oci_artifact(
+    name="app-artifact",
+    packages=[":app"],
+    oci_repository="app",
+    oci_tags=["latest"],
+    oci_tag_files=[":version"],   # + `1.2.0` on a checkout of the `app-v1.2.0` tag, `1.2.1.dev3` after it
+)
+```
+
+The files are hydrated, and generators run, every time the artifact is packaged or published, so the tag follows
+the git state. An OCI tag cannot contain `+`, hence `local_scheme="no-local-version"` for dev builds.
 
 ### `oci_artifact` fields
 
@@ -67,7 +89,9 @@ with the `registry`, `repository`, `tags` and `digest` of each copy.
 | `packages`          | Addresses of targets `pants package` can build, e.g. `[":app"]`. Each output becomes a layer.                                                                                                                                                                 |
 | `output_path`       | Where `pants package` writes the layout directory, relative to `--distdir`. Default: `<spec path with dots>/<target name>`.                                                                                                                                   |
 | `oci_tags`          | Tags applied in the layout and in every registry. Default: `["latest"]`. `[]` leaves the artifact untagged, addressable by digest only.                                                                                                                      |
+| `oci_tag_files`     | Addresses of `file`, `resource` or code generator targets (e.g. `scm_version_file`, `shell_command`) whose files hold further tags, one per non-blank line, appended to `oci_tags`. Duplicates are dropped.                                                   |
 | `oci_artifact_type` | The `artifactType` of the manifest, passed as `--artifact-type`, e.g. `application/vnd.python.pex.v1`. Default: `oras`' `application/vnd.unknown.artifact.v1`.                                                                                               |
+| `oci_artifact_platform` | The artifact's platform as `os[/arch][/variant][:os_version]`, e.g. `linux/amd64`, passed as `--artifact-platform` (experimental in `oras`): recorded in the manifest's config as `{"os": ..., "architecture": ...}`. Unset means platform-independent.      |
 | `oci_registries`    | Registry addresses (`ghcr.io/my-org`, `localhost:5000`) or `@aliases` of `[oras].registries` entries to publish to. Default: every `[oras].registries` entry with `default = true`.                                                                           |
 | `oci_repository`    | The repository within each registry, e.g. `team/app`; the published reference is `<registry>/<oci_repository>:<tag>`. Unset skips the target in `pants publish`.                                                                                             |
 | `skip_oras`         | If true, the target is skipped by `pants publish`.                                                                                                                                                                                                            |
@@ -78,6 +102,7 @@ with the `registry`, `repository`, `tags` and `digest` of each copy.
 | :---------------------- | :-------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `[oras].registries`     | `{}`            | Registries by alias: `{"alias": {"address": "host[:port][/prefix]", "default": bool}}`. An entry aliased `default` is a default too.                                                                     |
 | `[oras].skip`           | `false`         | Skip `oras` during `pants publish`.                                                                                                                                                                      |
+| `[oras].allow_publish`  | `true`          | Whether `pants publish` may push `oci_artifact` targets at all. Set it to `false` in `pants.toml` and to `true` in a CI-only config (`PANTS_CONFIG_FILES=pants.ci.toml`), so only the release pipeline publishes. |
 | `[oras].args`           | `[]`            | Extra arguments for every `oras cp`, e.g. `--to-plain-http` or `--to-insecure`. The registry is the copy's destination, so its flags are the `--to-*` ones. They follow the plugin's own flags, so a repeated flag overrides it. |
 | `[oras].config`         | unset           | A registry authentication file in the `~/.docker/config.json` format, passed as `--to-registry-config`. Relative paths are resolved from the build root.                                                 |
 | `[oras].extra_env_vars` | `[]`            | Extra environment variables for `oras cp`, as `NAME=value` or `NAME` to copy from Pants' environment, e.g. `HTTPS_PROXY` or `SSL_CERT_FILE`.                                                             |

@@ -13,6 +13,18 @@ class ScmVersionDummySourceField(OptionalSingleSourceField):
     help = "A version string generated from VCS information."
 
 
+class ScmVersionFileDummySourceField(OptionalSingleSourceField):
+    """
+    The `scm_version_file` counterpart of `ScmVersionDummySourceField`.
+
+    A class of its own: Pants selects a code generator by the type of the field it hydrates, and a consumer that
+    asks for Python and file sources at once (`pants test` does) must find one generator, not two.
+    """
+
+    alias = "_dummy_source"
+    help = "A version string generated from VCS information."
+
+
 class ScmVersionTagPrefixField(StringField):
     """Literal prefix that selects this target's tags."""
 
@@ -101,6 +113,19 @@ class ScmVersionTemplateField(StringField):
     )
 
 
+class ScmVersionFileTemplateField(ScmVersionTemplateField):
+    """Format string of the generated file; defaults to the bare version on one line."""
+
+    required = False
+    default = "{version}\n"
+    help = help_text(
+        """
+        Generate the file's content using this format string, which takes a `version` format kwarg. Defaults to
+        the version on its own, followed by a newline.
+        """
+    )
+
+
 class ScmVersionPythonResolveField(PythonResolveField):
     """The resolve the generated module belongs to, for dependency inference."""
 
@@ -130,7 +155,39 @@ class ScmVersionTarget(Target):
         monorepo can be tagged and versioned on its own. Only the fields of this target configure
         vcs-versioning; any `[tool.vcs-versioning]` table in the repo is ignored.
 
+        The generated module is a Python source: it is importable, and dependency inference maps it to this
+        target. For a plain file instead, see `scm_version_file`.
+
         Requires vcs-versioning >= 2.5, the core library of setuptools-scm >= 10 (see the `[vcs-versioning]`
         subsystem).
+        """
+    )
+
+
+class ScmVersionFileTarget(Target):
+    """Generates a plain file holding a version string from git tags with vcs-versioning."""
+
+    alias = "scm_version_file"
+    core_fields = (
+        *COMMON_TARGET_FIELDS,
+        ScmVersionTagPrefixField,
+        ScmVersionTagRegexField,
+        ScmVersionVersionSchemeField,
+        ScmVersionLocalSchemeField,
+        ScmVersionFileDummySourceField,
+        ScmVersionGenerateToField,
+        ScmVersionFileTemplateField,
+    )
+    help = help_text(
+        """
+        Generates a plain file holding a version string from git tags with vcs-versioning.
+
+        The `file` counterpart of `scm_version`: the generated file keeps its `generate_to` path (no source root
+        is stripped) and goes wherever `file` targets go, e.g. the `files` of an `archive`, a Docker build
+        context, or a plugin field that reads version files. The default `template` writes the version on one
+        line.
+
+        Only the fields of this target configure vcs-versioning; any `[tool.vcs-versioning]` table in the repo is
+        ignored. Requires vcs-versioning >= 2.5 (see the `[vcs-versioning]` subsystem).
         """
     )

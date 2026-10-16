@@ -8,7 +8,7 @@ from pants.engine.env_vars import EnvironmentVarsRequest
 from pants.engine.platform import Platform
 from pants.engine.rules import collect_rules
 from pants.engine.unions import UnionRule
-from pants.option.option_types import ArgsListOption, DictOption, FileOption, SkipOption, StrListOption
+from pants.option.option_types import ArgsListOption, BoolOption, DictOption, FileOption, SkipOption, StrListOption
 from pants.util.memo import memoized_method
 from pants.util.strutil import softwrap
 
@@ -57,6 +57,17 @@ class Oras(TemplatedExternalTool):
             Added to every `oras cp` run by `pants publish`, after the plugin's own flags
             (https://oras.land/docs/commands/oras_cp). The registry is the copy's destination, so its flags are
             the `--to-*` ones. A repeated flag overrides the plugin's value.
+            """
+        ),
+    )
+    allow_publish = BoolOption(
+        default=True,
+        help=softwrap(
+            """
+            Whether `pants publish` may push `oci_artifact` targets at all; when false, every `oci_artifact` is
+            skipped before it is packaged. Set it to `false` in `pants.toml` and to `true` in a CI-only config
+            file (`PANTS_CONFIG_FILES=pants.ci.toml`), so a release pipeline publishes while a local
+            `pants publish ::` cannot.
             """
         ),
     )

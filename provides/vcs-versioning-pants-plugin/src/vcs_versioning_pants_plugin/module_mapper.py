@@ -19,7 +19,7 @@ from pants.engine.target import AllTargets, Targets
 from pants.engine.unions import UnionRule
 from pants.util.logging import LogLevel
 
-from vcs_versioning_pants_plugin.target_types import ScmVersionGenerateToField
+from vcs_versioning_pants_plugin.target_types import ScmVersionGenerateToField, ScmVersionPythonResolveField
 
 if TYPE_CHECKING:
     from pants_plugin_developer_utils import CollectedRules
@@ -35,7 +35,8 @@ class AllScmVersionTargets(Targets):
 
 @rule(desc="Find all scm_version targets in project", level=LogLevel.DEBUG)
 async def find_all_scm_version_targets(targets: AllTargets) -> AllScmVersionTargets:
-    return AllScmVersionTargets(tgt for tgt in targets if tgt.has_field(ScmVersionGenerateToField))
+    # `scm_version_file` targets generate plain files, not modules; only `scm_version` has a `python_resolve`.
+    return AllScmVersionTargets(tgt for tgt in targets if tgt.has_field(ScmVersionPythonResolveField))
 
 
 @rule

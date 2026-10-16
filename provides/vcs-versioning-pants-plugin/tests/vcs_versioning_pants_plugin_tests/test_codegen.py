@@ -1,41 +1,60 @@
 import tomllib
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
 from pathlib import PurePath
+from typing import Any
 from unittest.mock import create_autospec
 
 import pytest
+from pants.backend.python.target_types import PythonSourceField
 from pants.backend.python.util_rules.interpreter_constraints import InterpreterConstraints
 from pants.backend.python.util_rules.pex import PexRequest, VenvPex, VenvPexProcess
+from pants.core.target_types import FileSourceField
 from pants.core.util_rules.system_binaries import GitBinary
 from pants.engine.addresses import Address
 from pants.engine.environment import ChosenLocalEnvironmentName, EnvironmentName
 from pants.engine.fs import CreateDigest, FileContent, Snapshot
 from pants.engine.internals.native_engine import EMPTY_SNAPSHOT
 from pants.engine.process import ProcessCacheScope, ProcessResult
-from pants.engine.target import GeneratedSources
+from pants.engine.target import GeneratedSources, GenerateSourcesRequest, Target
 from pants.testutil.rule_runner import run_rule_with_mocks
 from pants.vcs.git import GitWorktree, GitWorktreeRequest, MaybeGitWorktree
 
 from vcs_versioning_pants_plugin.codegen import (
     SYNTHETIC_CONFIG_PATH,
+    GenerateScmVersionFileRequest,
     GenerateScmVersionRequest,
     ScmVersioningError,
+    generate_file_from_scm_version,
     generate_python_from_scm_version,
     render_vcs_versioning_config,
 )
 from vcs_versioning_pants_plugin.subsystem import VcsVersioning
-from vcs_versioning_pants_plugin.target_types import DEFAULT_TAG_REGEX, ScmVersionTarget
+from vcs_versioning_pants_plugin.target_types import (
+    DEFAULT_TAG_REGEX,
+    ScmVersionDummySourceField,
+    ScmVersionFileDummySourceField,
+    ScmVersionFileTarget,
+    ScmVersionTarget,
+)
 from vcs_versioning_pants_plugin_tests.conftest import TOOL_INTERPRETER_CONSTRAINTS
 
 ADDRESS = Address("src/pkg", target_name="pkg")
 GENERATE_TO = "src/pkg/version.py"
+FILE_GENERATE_TO = "src/pkg/version.txt"
 WORKTREE = PurePath("/checkout")
 ENVIRONMENT = ChosenLocalEnvironmentName(EnvironmentName(None))
+
+type CodegenRule = Callable[..., Coroutine[Any, Any, GeneratedSources]]
 
 
 def _target(**fields: str) -> ScmVersionTarget:
     values = {"generate_to": GENERATE_TO, "template": '__version__ = "{version}"\n', **fields}
     return ScmVersionTarget(values, ADDRESS)
+
+
+def _file_target(**fields: str) -> ScmVersionFileTarget:
+    return ScmVersionFileTarget({"generate_to": FILE_GENERATE_TO, **fields}, ADDRESS)
 
 
 # --------------------------------------------------------------------------------------
@@ -93,8 +112,15 @@ class CodegenRun:
     output_digests: list[CreateDigest] = field(default_factory=list)
 
 
-def run_codegen(target: ScmVersionTarget, vcs_versioning: VcsVersioning, *, stdout: bytes) -> CodegenRun:
-    """Run the codegen rule for `target` with vcs-versioning's process mocked to print `stdout`."""
+def run_codegen(
+    target: Target,
+    vcs_versioning: VcsVersioning,
+    *,
+    stdout: bytes,
+    rule: CodegenRule = generate_python_from_scm_version,
+    request_type: type[GenerateSourcesRequest] = GenerateScmVersionRequest,
+) -> CodegenRun:
+    """Run the codegen `rule` for `target` with vcs-versioning's process mocked to print `stdout`."""
     venv_pex: VenvPex = create_autospec(VenvPex, instance=True)
     process_result: ProcessResult = create_autospec(ProcessResult, instance=True, stdout=stdout)
     run = CodegenRun(
@@ -124,8 +150,8 @@ def run_codegen(target: ScmVersionTarget, vcs_versioning: VcsVersioning, *, stdo
         return run.output_snapshot
 
     run.generated = run_rule_with_mocks(
-        generate_python_from_scm_version,
-        rule_args=[GenerateScmVersionRequest(EMPTY_SNAPSHOT, target), vcs_versioning, ENVIRONMENT],
+        rule,
+        rule_args=[request_type(EMPTY_SNAPSHOT, target), vcs_versioning, ENVIRONMENT],
         mock_calls={
             "pants.vcs.git.get_git_worktree": mock_get_git_worktree,
             "pants.backend.python.util_rules.pex.create_venv_pex": mock_create_venv_pex,
@@ -142,6 +168,46 @@ def test_generates_the_template_from_the_tools_stdout(vcs_versioning: VcsVersion
 
     assert run.output_digests == [CreateDigest([FileContent(GENERATE_TO, b'__version__ = "1.2.3.dev4+gabc1234"\n')])]
     assert run.generated == GeneratedSources(run.output_snapshot)
+
+
+def test_generators_pair_each_target_type_with_one_output_type() -> None:
+    """Pants selects a generator by source field type; one per target type keeps `pants test`'s hydration unambiguous."""
+    assert (GenerateScmVersionRequest.input, GenerateScmVersionRequest.output) == (
+        ScmVersionDummySourceField,
+        PythonSourceField,
+    )
+    assert (GenerateScmVersionFileRequest.input, GenerateScmVersionFileRequest.output) == (
+        ScmVersionFileDummySourceField,
+        FileSourceField,
+    )
+    assert not issubclass(ScmVersionFileDummySourceField, ScmVersionDummySourceField)
+
+
+def test_file_target_generates_the_bare_version_by_default(vcs_versioning: VcsVersioning) -> None:
+    run = run_codegen(
+        _file_target(local_scheme="no-local-version"),
+        vcs_versioning,
+        stdout=b"1.2.4.dev4\n",
+        rule=generate_file_from_scm_version,
+        request_type=GenerateScmVersionFileRequest,
+    )
+
+    assert run.output_digests == [CreateDigest([FileContent(FILE_GENERATE_TO, b"1.2.4.dev4\n")])]
+    assert run.generated == GeneratedSources(run.output_snapshot)
+    [(process, _)] = run.processes
+    assert process.description == f"Run vcs-versioning for {ADDRESS.spec}"
+
+
+def test_file_target_honours_its_template(vcs_versioning: VcsVersioning) -> None:
+    run = run_codegen(
+        _file_target(template="version={version}"),
+        vcs_versioning,
+        stdout=b"1.2.3",
+        rule=generate_file_from_scm_version,
+        request_type=GenerateScmVersionFileRequest,
+    )
+
+    assert run.output_digests == [CreateDigest([FileContent(FILE_GENERATE_TO, b"version=1.2.3")])]
 
 
 def test_runs_the_tool_in_the_worktree_with_the_synthetic_config(vcs_versioning: VcsVersioning) -> None:
