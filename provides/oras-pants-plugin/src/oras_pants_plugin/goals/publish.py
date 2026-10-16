@@ -30,10 +30,12 @@ from pants.util.logging import LogLevel
 
 from oras_pants_plugin.goals.common import (
     OCIArtifactFieldSet,
+    OCIArtifactTagsRequest,
     OCILayoutRequest,
     OrasProcessRequest,
     oci_reference,
     read_oci_layout_manifest,
+    resolve_oci_artifact_tags,
     setup_oras_process,
 )
 from oras_pants_plugin.subsystem import Oras
@@ -74,6 +76,8 @@ async def check_if_skip_oras_publish(request: OrasPublishSkipRequest, oras: Oras
     field_set = request.publish_fs
     if oras.skip:
         reason = f"(by `[{Oras.options_scope}].skip = True`)"
+    elif not oras.allow_publish:
+        reason = f"(by `[{Oras.options_scope}].allow_publish = False`)"
     elif field_set.skip_oras.value:
         reason = f"(by `{field_set.skip_oras.alias}` on {request.address})"
     elif not field_set.oci_repository.value:
@@ -138,7 +142,7 @@ async def setup_oras_cp_process(request: OCICopyRequest, oras: Oras, build_root:
 
 @rule(desc="Copies the packaged OCI artifact to every configured OCI registry with `oras`.", level=LogLevel.DEBUG)
 async def publish_oci_artifact(request: OCIPublishRequest, oras: Oras) -> PublishProcesses:
-    """One interactive `oras cp` per registry and packaged layout, tagging the artifact with every `oci_tags` entry."""
+    """One interactive `oras cp` per registry and packaged layout, with the same tags `pants package` applied."""
     field_set = request.field_set
     layout_paths = tuple(
         artifact.relpath for package in request.packages for artifact in package.artifacts if artifact.relpath
@@ -148,6 +152,7 @@ async def publish_oci_artifact(request: OCIPublishRequest, oras: Oras) -> Publis
     if not layout_paths or not registries or not repository:
         return PublishProcesses()
 
+    tags = await resolve_oci_artifact_tags(OCIArtifactTagsRequest.from_field_set(field_set))
     input_digest = await merge_digests(MergeDigests(package.digest for package in request.packages))
     manifests = await concurrently(
         read_oci_layout_manifest(OCILayoutRequest(input_digest, layout_path)) for layout_path in layout_paths
@@ -156,7 +161,7 @@ async def publish_oci_artifact(request: OCIPublishRequest, oras: Oras) -> Publis
         OCICopyRequest(
             registry=registry.address,
             repository=repository,
-            tags=field_set.oci_tags.value or (),
+            tags=tuple(tags),
             layout_path=layout_path,
             manifest_digest=manifest.digest,
             input_digest=input_digest,

@@ -15,12 +15,14 @@ def test_generated_module_is_mapped_for_dependency_inference(scm_rule_runner: Ru
         {
             "src/pkg/BUILD": scm_version_build("pkg"),
             "src/other/BUILD": 'scm_version(name="data", generate_to="src/other/version.txt", template="{version}")',
+            "src/asset/BUILD": 'scm_version_file(name="file", generate_to="src/asset/version.py")',
         }
     )
 
     mapping = scm_rule_runner.request(FirstPartyPythonMappingImpl, [ScmVersionMappingMarker()])
 
-    # Only `.py` outputs become importable modules; the source root `src` is stripped.
+    # Only `.py` outputs of `scm_version` targets become importable modules (a `scm_version_file` generates a
+    # plain file, whatever its name); the source root `src` is stripped.
     assert mapping == FirstPartyPythonMappingImpl.create(
         {
             "python-default": {

@@ -31,13 +31,15 @@ from pants.util.strutil import pluralize
 from oras_pants_plugin.constants import SandboxDir
 from oras_pants_plugin.goals.common import (
     OCIArtifactFieldSet,
+    OCIArtifactTagsRequest,
     OCILayoutRequest,
     OrasProcessRequest,
     oci_reference,
     oras_file_arg,
     read_oci_layout_manifest,
+    resolve_oci_artifact_tags,
 )
-from oras_pants_plugin.target_types import OCIArtifactTypeField
+from oras_pants_plugin.target_types import OCIArtifactPlatformField, OCIArtifactTypeField
 
 if TYPE_CHECKING:
     from pants_plugin_developer_utils import CollectedRules
@@ -49,15 +51,18 @@ class OCIArtifactPackageFieldSet(PackageFieldSet, OCIArtifactFieldSet):
 
     output_path: OutputPathField
     oci_artifact_type: OCIArtifactTypeField
+    oci_artifact_platform: OCIArtifactPlatformField
 
 
 def construct_oras_push_argv(
-    layout_path: str, tags: Iterable[str], artifact_type: str | None, files: Iterable[str]
+    layout_path: str, tags: Iterable[str], artifact_type: str | None, files: Iterable[str], platform: str | None = None
 ) -> tuple[str, ...]:
     """The `oras push` arguments (after the binary) that build the layout at `layout_path` from `files`."""
     argv: list[str] = ["push", "--no-tty", "--oci-layout"]
     if artifact_type:
         argv.extend(["--artifact-type", artifact_type])
+    if platform:
+        argv.extend(["--artifact-platform", platform])
     argv.append(oci_reference(layout_path, tags))
     argv.extend(oras_file_arg(file) for file in files)
     return tuple(argv)
@@ -65,7 +70,7 @@ def construct_oras_push_argv(
 
 @rule(desc="Package an `oci_artifact` target into an OCI image layout with `oras`", level=LogLevel.DEBUG)
 async def package_oci_artifact(field_set: OCIArtifactPackageFieldSet) -> BuiltPackage:
-    """Builds every `packages` target, then pushes their outputs into a layout at the target's `output_path`."""
+    """Builds every `packages` target, then pushes their outputs into a layout at `output_path`, with every tag."""
     targets = await resolve_targets(**implicitly(field_set.packages.to_unparsed_address_inputs()))
     field_sets_per_target = await find_valid_field_sets(
         FieldSetsPerTargetRequest(PackageFieldSet, targets), **implicitly()
@@ -82,13 +87,14 @@ async def package_oci_artifact(field_set: OCIArtifactPackageFieldSet) -> BuiltPa
         )
 
     input_digest = await merge_digests(MergeDigests(package.digest for package in packages))
-    tags = field_set.oci_tags.value or ()
+    tags = await resolve_oci_artifact_tags(OCIArtifactTagsRequest.from_field_set(field_set))
+    platform = field_set.oci_artifact_platform.value
     layout_path = field_set.output_path.value_or_default(file_ending=None)
     result = await execute_process_or_raise(
         **implicitly(
             OrasProcessRequest(
                 argv=construct_oras_push_argv(
-                    SandboxDir.OCI_LAYOUT_OUT_DIRNAME, tags, field_set.oci_artifact_type.value, files
+                    SandboxDir.OCI_LAYOUT_OUT_DIRNAME, tags, field_set.oci_artifact_type.value, files, platform
                 ),
                 description=f"Build OCI artifact {field_set.address} from {pluralize(len(files), 'file')} with `oras`",
                 input_digest=input_digest,
@@ -120,6 +126,7 @@ async def package_oci_artifact(field_set: OCIArtifactPackageFieldSet) -> BuiltPa
                 layout_path,
                 extra_log_lines=(
                     f"  OCI artifact {oci_reference(layout_path, tags)} ({manifest.digest})",
+                    *([f"  platform: {platform}"] if platform else []),
                     *(f"  layer: {file}" for file in files),
                 ),
             ),

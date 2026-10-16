@@ -5,7 +5,7 @@ import pytest
 from pants.core.goals import package as core_package
 from pants.core.goals.package import BuiltPackage, BuiltPackageArtifact, OutputPathField, PackageFieldSet
 from pants.core.goals.publish import CheckSkipResult, PublishProcesses
-from pants.core.target_types import FileTarget
+from pants.core.target_types import FileTarget, ResourceTarget
 from pants.core.util_rules import env_vars, external_tool
 from pants.core.util_rules.external_tool import UnsupportedVersionUsage
 from pants.engine.addresses import Address
@@ -20,6 +20,7 @@ from pants.testutil.rule_runner import QueryRule, RuleRunner
 
 from oras_pants_plugin import subsystem
 from oras_pants_plugin.goals import common, package, publish
+from oras_pants_plugin.goals.common import OCIArtifactTags, OCIArtifactTagsRequest
 from oras_pants_plugin.goals.package import OCIArtifactPackageFieldSet
 from oras_pants_plugin.goals.publish import OCIPublishRequest, OrasPublishSkipRequest
 from oras_pants_plugin.subsystem import Oras
@@ -86,6 +87,7 @@ def oras_factory() -> OrasFactory:
             "url_platform_mapping": dict(Oras.default_url_platform_mapping),
             "use_unsupported_version": UnsupportedVersionUsage.RaiseError,
             "skip": False,
+            "allow_publish": True,
             "args": [],
             "config": None,
             "registries": {},
@@ -112,13 +114,14 @@ def oras_rule_runner(rule_runner_factory: RuleRunnerFactory) -> RuleRunner:  # n
             *collect_rules({"package_fake": package_fake}),
             UnionRule(PackageFieldSet, FakePackageFieldSet),
             QueryRule(BuiltPackage, [OCIArtifactPackageFieldSet]),
+            QueryRule(OCIArtifactTags, [OCIArtifactTagsRequest]),
             QueryRule(PublishProcesses, [OCIPublishRequest]),
             QueryRule(CheckSkipResult, [OrasPublishSkipRequest]),
             QueryRule(ProcessResult, [Process]),
             QueryRule(DigestContents, [Digest]),
             QueryRule(Snapshot, [Digest]),
         ],
-        target_types=[OCIArtifact, FakePackageTarget, FileTarget],
+        target_types=[OCIArtifact, FakePackageTarget, FileTarget, ResourceTarget],
     )
 
 

@@ -21,7 +21,7 @@ from pants.testutil.rule_runner import RuleRunner, run_rule_with_mocks
 from pants.util.frozendict import FrozenDict
 
 from oras_pants_plugin.constants import SandboxDir
-from oras_pants_plugin.goals.common import OCILayoutManifest, OCILayoutRequest
+from oras_pants_plugin.goals.common import OCIArtifactTags, OCIArtifactTagsRequest, OCILayoutManifest, OCILayoutRequest
 from oras_pants_plugin.goals.package import OCIArtifactPackageFieldSet
 from oras_pants_plugin.goals.publish import (
     OCICopyRequest,
@@ -92,6 +92,11 @@ def test_field_set() -> None:
     ("options", "field_values", "expected_reason"),
     [
         ({"skip": True}, {"oci_repository": _REPOSITORY, "oci_registries": ["ghcr.io"]}, "(by `[oras].skip = True`)"),
+        (
+            {"allow_publish": False},
+            {"oci_repository": _REPOSITORY, "oci_registries": ["ghcr.io"]},
+            "(by `[oras].allow_publish = False`)",
+        ),
         (
             {},
             {"oci_repository": _REPOSITORY, "oci_registries": ["ghcr.io"], "skip_oras": True},
@@ -207,12 +212,18 @@ def test_publish_oci_artifact_without_layouts_or_registries(
 
 
 def test_publish_oci_artifact(oras_factory: OrasFactory) -> None:
-    """One interactive `oras cp` per registry, from the packaged layout's manifest digest, with every tag."""
+    """One interactive `oras cp` per registry, from the packaged layout's manifest digest, with every resolved tag."""
     layout_digest = Snapshot.create_for_testing([f"{LAYOUT_PATH}/index.json"], [LAYOUT_PATH]).digest
     packages = (BuiltPackage(layout_digest, (BuiltPackageArtifact(LAYOUT_PATH), BuiltPackageArtifact(None))),)
-    request = _publish_request(packages, oci_tags=["v1", "latest"])
+    request = _publish_request(packages, oci_tags=["v1", "latest"], oci_tag_files=[":version"])
+    tags = ("v1", "latest", "1.2.3")
+    tags_requests: list[OCIArtifactTagsRequest] = []
     layout_requests: list[OCILayoutRequest] = []
     copy_requests: list[OCICopyRequest] = []
+
+    def mock_resolve_oci_artifact_tags(tags_request: OCIArtifactTagsRequest) -> OCIArtifactTags:
+        tags_requests.append(tags_request)
+        return OCIArtifactTags(tags)
 
     def mock_read_oci_layout_manifest(layout_request: OCILayoutRequest) -> OCILayoutManifest:
         layout_requests.append(layout_request)
@@ -232,28 +243,30 @@ def test_publish_oci_artifact(oras_factory: OrasFactory) -> None:
         rule_args=[request, oras_factory()],
         mock_calls={
             "pants.engine.intrinsics.merge_digests": lambda _merge_digests: layout_digest,
+            "oras_pants_plugin.goals.common.resolve_oci_artifact_tags": mock_resolve_oci_artifact_tags,
             "oras_pants_plugin.goals.common.read_oci_layout_manifest": mock_read_oci_layout_manifest,
             "oras_pants_plugin.goals.publish.setup_oras_cp_process": mock_setup_oras_cp_process,
         },
     )
 
+    assert tags_requests == [OCIArtifactTagsRequest.from_field_set(request.field_set)]
     assert layout_requests == [OCILayoutRequest(layout_digest, LAYOUT_PATH)]
     assert copy_requests == [
-        _copy_request(registry=registry, tags=("v1", "latest"), input_digest=layout_digest) for registry in _REGISTRIES
+        _copy_request(registry=registry, tags=tags, input_digest=layout_digest) for registry in _REGISTRIES
     ]
     assert len(actual) == len(_REGISTRIES)
     for publish, registry in zip(actual, _REGISTRIES, strict=True):
         assert publish.names == (LAYOUT_PATH,)
-        assert publish.description == f"{registry}/{_REPOSITORY}:v1,latest"
+        assert publish.description == f"{registry}/{_REPOSITORY}:v1,latest,1.2.3"
         assert publish.data == PublishOutputData(
-            {"registry": registry, "repository": _REPOSITORY, "tags": ("v1", "latest"), "digest": _DIGEST}
+            {"registry": registry, "repository": _REPOSITORY, "tags": tags, "digest": _DIGEST}
         )
         assert isinstance(publish.process, InteractiveProcess)
         assert publish.process.process.argv == (
             "oras",
             "cp",
             f"{LAYOUT_PATH}@{_DIGEST}",
-            f"{registry}/{_REPOSITORY}:v1,latest",
+            f"{registry}/{_REPOSITORY}:v1,latest,1.2.3",
         )
         assert publish.process.process.env == FrozenDict({"HOME": "/home/me"})
         assert publish.process.process.input_digest == layout_digest
@@ -271,6 +284,9 @@ def test_publish_oci_artifact_resolves_registry_aliases(oras_factory: OrasFactor
         rule_args=[OCIPublishRequest(field_set=field_set, packages=packages), oras],
         mock_calls={
             "pants.engine.intrinsics.merge_digests": lambda _merge_digests: EMPTY_DIGEST,
+            "oras_pants_plugin.goals.common.resolve_oci_artifact_tags": lambda request: OCIArtifactTags(
+                request.oci_tags.value or ()
+            ),
             "oras_pants_plugin.goals.common.read_oci_layout_manifest": lambda _request: OCILayoutManifest(_DIGEST),
             "oras_pants_plugin.goals.publish.setup_oras_cp_process": lambda request: Process(
                 argv=("oras",), description=request.reference

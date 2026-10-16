@@ -12,6 +12,7 @@ backend_packages = [
   "pants.backend.shell.lint.shellcheck",
   "pants.backend.shell.lint.shfmt",
   "pants.backend.tools.taplo",
+  "oras_pants_plugin",
   "pyproject_fmt_pants_plugin",
   "ty_pants_plugin",
   "typos_pants_plugin",
@@ -21,6 +22,7 @@ pants_version = "2.33.1"
 # https://www.pantsbuild.org/stable/docs/writing-plugins/overview#in-repo-plugins
 pythonpath = [
   "%(buildroot)s/provides/actionlint-pants-plugin/src",
+  "%(buildroot)s/provides/oras-pants-plugin/src",
   "%(buildroot)s/provides/pyproject-fmt-pants-plugin/src",
   "%(buildroot)s/provides/ty-pants-plugin/src",
   "%(buildroot)s/provides/typos-pants-plugin/src",
@@ -80,6 +82,9 @@ args = [
 
 [cli.alias]
 --all-changed = "--changed-since=HEAD --changed-dependents=transitive"
+
+[oras]
+allow_publish = false
 
 [python-bootstrap]
 search_path = ["<PYENV>", "<ASDF>", "<PATH>"]

@@ -16,7 +16,9 @@ Each plugin is a separate Python distribution in its own directory under the top
 ```
 provides/
   <plugin-name>/
-    BUILD            # `plugin_wheel()`: the `plugin-whl` python_distribution
+    BUILD            # `plugin_wheel()`: the `plugin-whl` python_distribution, plus the `plugin-pex` pex_binary and
+                     # the `plugin-oci-artifact` oci_artifact that publish the plugin as a PEX to ghcr.io
+    version.txt      # generated from the plugin's git tags at build time, the OCI artifact's tag; never committed
     pyproject.toml   # packaging metadata and runtime dependencies of this plugin (the version comes from git tags)
     README.md
     CHANGELOG.md     # written by `cog bump`
@@ -45,10 +47,12 @@ pants fmt fix ::                        # ruff, shfmt, taplo, typos, BUILD file 
 pants lint ::                           # actionlint, ruff, shellcheck, shfmt, taplo, typos, yamllint
 pants check ::                          # ty
 pants test ::                           # pytest
-pants package ::                        # build every plugin's wheel -> dist/
+pants package ::                        # build every plugin's wheel, PEX and OCI image layout -> dist/
+pants publish ::                        # skipped locally: `[oras].allow_publish` is only true in pants.ci.toml
 pants generate-lockfiles                # regenerate etc/3rdparty/python/plugin-lockfile.json
 pants generate-lockfiles --resolve=vcs-versioning   # regenerate the bundled vcs-versioning tool lockfile
-pants export-codegen provides/<plugin-name>/src/<root_module>:scm-version   # preview version.py -> dist/codegen/
+pants export-codegen provides/<plugin-name>/src/<root_module>:scm-version-for-wheel   # preview version.py -> dist/codegen/
+pants export-codegen provides/<plugin-name>:scm-version-for-oci-artifact              # preview version.txt -> dist/codegen/
 pants export --resolve=plugin-resolve   # virtualenv for IDEs -> dist/export/
 ```
 
@@ -92,15 +96,20 @@ updates `provides/<plugin-name>/CHANGELOG.md` and tags the commit `<plugin-name>
 is no repo-wide version, and no `pyproject.toml` MAY declare a static `[project].version`.
 
 At build time the in-repo `vcs-versioning-pants-plugin` (see its README) derives the version from the latest
-`<plugin-name>-v*` tag reachable from `HEAD`: the `scm_version` target in `src/<root_module>/BUILD` runs
-vcs-versioning and generates `<root_module>/version.py`, which setuptools reads through
-`[tool.setuptools] dynamic.version` in the plugin's `pyproject.toml`. The module is packaged into the wheel
-but never written to the source tree. The wheel's version is:
+`<plugin-name>-v*` tag reachable from `HEAD`: the `scm_version` target `:scm-version-for-wheel` in
+`src/<root_module>/BUILD` runs vcs-versioning and generates `<root_module>/version.py`, which setuptools reads
+through `[tool.setuptools] dynamic.version` in the plugin's `pyproject.toml`. The module is packaged into the
+wheel but never written to the source tree. The wheel's version is:
 
 - `X.Y.Z` on a checkout of the `<plugin-name>-vX.Y.Z` tag,
 - `X.Y.(Z+1).devN+g<sha>` N commits after that tag (what a build from `main` produces),
 - the same with `.dYYYYMMDD` appended when the working tree is dirty,
 - `0.1.devN+g<sha>` for a plugin that was never tagged.
+
+The OCI artifact gets the same version as a tag, from the `scm_version_file` target `:scm-version-for-oci-artifact`
+in `provides/<plugin-name>/BUILD`, which generates `provides/<plugin-name>/version.txt` and feeds the
+`oci_tag_files` field of `:plugin-oci-artifact`. OCI tags cannot contain `+`, so this version has no local part:
+`X.Y.(Z+1).devN` on a dev build, `X.Y.Z` on a release.
 
 vcs-versioning needs the full history and all tags, so CI checkouts use `fetch-depth: 0`.
 
@@ -133,8 +142,9 @@ part. A commit that touches two plugins bumps both. A commit that touches only r
    - pushes that commit and the tags to `main`,
    - creates one **draft** GitHub release per tag from the plugin's changelog,
    - dispatches the *Publish* workflow once per tag.
-3. Approve the `pypi` environment prompt in each *Publish* run. It uploads the wheel to PyPI, then attaches
-   the wheel to the draft release and publishes it.
+3. Approve the `pypi` environment prompt in each *Publish* run. It uploads the wheel to PyPI, publishes the
+   plugin's PEX as an OCI artifact to `ghcr.io/zach-overflow/pants-plugin-depot/<plugin-name>:X.Y.Z` (and
+   `:latest`) with `pants publish`, then attaches the wheel to the draft release and publishes it.
 
 ## Adding a plugin
 
@@ -146,6 +156,8 @@ part. A commit that touches two plugins bumps both. A commit that touches only r
 2. Keep the distribution target named `plugin-whl`, as `plugin_wheel()` does. The Publish workflow builds
    `provides/<plugin-name>:plugin-whl`. The wheel packages everything reachable from the root module; pass
    subpackages nothing imports (and other extra targets) via `plugin_wheel(extra_dependencies=[...])`.
+   `plugin_wheel()` also defines `plugin-pex` and `plugin-oci-artifact`, which the Publish workflow publishes
+   to ghcr.io; pass `include_oci_pex=False` to opt out.
 3. Register the plugin in `cog.toml`: add `[monorepo.packages.<plugin-name>]` with
    `path = "provides/<plugin-name>"`, and add `<plugin-name>` to `scopes`. The package name MUST equal the
    directory name under `provides/`.
@@ -172,6 +184,9 @@ part. A commit that touches two plugins bumps both. A commit that touches only r
 - **PyPI**: one Trusted Publisher per plugin project, each for owner/repo `zach-overflow/pants-plugin-depot`,
   workflow `publish.yml`, environment `pypi`. Publish is always dispatched, never called as a reusable
   workflow, because PyPI rejects reusable workflows.
+- **GitHub Container Registry**: Publish pushes with the workflow's `GITHUB_TOKEN` (`packages: write`), which
+  creates the `ghcr.io/zach-overflow/pants-plugin-depot/<plugin-name>` package on first use, linked to this
+  repository and private. Make it public in the package's settings after the first publish.
 
 ## Troubleshooting
 
@@ -189,9 +204,13 @@ part. A commit that touches two plugins bumps both. A commit that touches only r
 - **`approve-and-tag` fails with "moved past the validated commit"**: a PR merged while the release was
   running. Re-run the Release workflow.
 - **`approve-and-tag` fails on `git push`**: `RELEASE_TOKEN` is missing, expired, or not an admin's token.
-- **`build-wheel` finds no wheel for the version**: vcs-versioning did not see the tag on `HEAD`. The
-  checkout was shallow, the tag is not the one on `HEAD`, or the tree was dirty, so the wheel carries a dev or
-  local version. Check with `pants export-codegen provides/<plugin-name>/src/<root_module>:scm-version`.
+- **`build-wheel` finds no wheel for the version**, or **`publish-ghcr` reports the artifact was not tagged
+  with the version**: vcs-versioning did not see the tag on `HEAD`. The checkout was shallow, the tag is not
+  the one on `HEAD`, or the tree was dirty, so the artifact carries a dev or local version. Check with
+  `pants export-codegen provides/<plugin-name>/src/<root_module>:scm-version-for-wheel`.
+- **`publish-ghcr` reports the artifact was not published**: `pants publish` skipped it. `PANTS_CONFIG_FILES`
+  must include `pants.ci.toml`, where `[oras].allow_publish` is true, and `docker login` to ghcr.io must have
+  succeeded.
 - **`scm_version` fails with "Cannot determine the version"**: there is no git worktree, e.g. the build runs
   from an exported tarball instead of a clone.
 - **PyPI publish fails with an OIDC error**: the plugin's registered Trusted Publisher must match exactly.

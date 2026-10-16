@@ -3,6 +3,11 @@ from pants.testutil.rule_runner import RuleRunner
 from pants.vcs import git
 
 from vcs_versioning_pants_plugin import register
+from vcs_versioning_pants_plugin.target_types import ScmVersionFileTarget, ScmVersionTarget
+
+
+def test_target_types() -> None:
+    assert tuple(register.target_types()) == (ScmVersionTarget, ScmVersionFileTarget)
 
 
 def test_backend_registers_with_the_engine() -> None:

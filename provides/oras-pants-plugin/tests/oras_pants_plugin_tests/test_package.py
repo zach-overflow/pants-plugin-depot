@@ -53,12 +53,15 @@ def test_construct_oras_push_argv() -> None:
         ("v1", "latest"),
         "application/vnd.python.pex.v1",
         ("src.app/app.pex", "dist/app:v1"),
+        "linux/amd64",
     ) == (
         "push",
         "--no-tty",
         "--oci-layout",
         "--artifact-type",
         "application/vnd.python.pex.v1",
+        "--artifact-platform",
+        "linux/amd64",
         f"{SandboxDir.OCI_LAYOUT_OUT_DIRNAME}:v1,latest",
         "src.app/app.pex",
         "dist/app:v1:",
@@ -80,14 +83,18 @@ def test_package_oci_artifact(oras_rule_runner: RuleRunner) -> None:
                 """\
                 fake_package(name="cli", content="cli")
                 fake_package(name="lib", content="lib")
+                file(name="version", source="VERSION")
                 oci_artifact(
                     name="app",
                     packages=[":cli", ":lib"],
                     oci_tags=["v1", "latest"],
+                    oci_tag_files=[":version"],
                     oci_artifact_type="application/vnd.me.app.v1",
+                    oci_artifact_platform="linux/amd64",
                 )
                 """
-            )
+            ),
+            f"{APP_DIR}/VERSION": "1.2.3\n",
         }
     )
     field_set = OCIArtifactPackageFieldSet.create(oras_rule_runner.get_target(APP_ADDRESS))
@@ -104,8 +111,15 @@ def test_package_oci_artifact(oras_rule_runner: RuleRunner) -> None:
     assert {entry["annotations"]["org.opencontainers.image.ref.name"] for entry in index["manifests"]} == {
         "v1",
         "latest",
+        "1.2.3",
     }
     assert manifest["artifactType"] == "application/vnd.me.app.v1"
+    # `--artifact-platform` makes `oras` record the platform in an image config instead of the empty config.
+    assert manifest["config"]["mediaType"] == "application/vnd.oci.image.config.v1+json"
+    assert json.loads(layout[f"{LAYOUT_PATH}/blobs/{manifest['config']['digest'].replace(':', '/')}"]) == {
+        "os": "linux",
+        "architecture": "amd64",
+    }
     assert [layer["annotations"]["org.opencontainers.image.title"] for layer in manifest["layers"]] == [
         "src.app/cli.txt",
         "src.app/lib.txt",
@@ -115,7 +129,8 @@ def test_package_oci_artifact(oras_rule_runner: RuleRunner) -> None:
     artifact = package.artifacts[0]
     assert artifact.relpath == LAYOUT_PATH
     assert artifact.extra_log_lines == (
-        f"  OCI artifact {LAYOUT_PATH}:v1,latest ({digest})",
+        f"  OCI artifact {LAYOUT_PATH}:v1,latest,1.2.3 ({digest})",
+        "  platform: linux/amd64",
         "  layer: src.app/cli.txt",
         "  layer: src.app/lib.txt",
     )
@@ -141,6 +156,7 @@ def test_package_oci_artifact_untagged_with_custom_output_path(oras_rule_runner:
     index = json.loads(layout["artifacts/app-layout/index.json"])
     assert "org.opencontainers.image.ref.name" not in index["manifests"][0].get("annotations", {})
     assert manifest["artifactType"] == "application/vnd.unknown.artifact.v1"
+    assert manifest["config"]["mediaType"] == "application/vnd.oci.empty.v1+json"
     assert package.artifacts == (
         BuiltPackageArtifact(
             "artifacts/app-layout",

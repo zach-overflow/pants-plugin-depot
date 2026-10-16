@@ -4,5 +4,8 @@
 colors = true
 dynamic_ui = false
 
+[oras]
+allow_publish = true
+
 [stats]
 log = true
