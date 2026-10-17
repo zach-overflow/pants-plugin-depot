@@ -21,7 +21,7 @@ from pants.backend.python.util_rules import pex_from_targets
 from pants.backend.python.util_rules.interpreter_constraints import InterpreterConstraints
 
 # Pants' own `ty`-style partitioning helper has no public equivalent.
-from pants.backend.python.util_rules.partition import _partition_by_interpreter_constraints_and_resolve  # ruff: ignore[import-private-name]
+from pants.backend.python.util_rules.partition import _partition_by_interpreter_constraints_and_resolve  # ruff: ignore[PLC2701]
 from pants.backend.python.util_rules.pex import PexRequest, VenvPexProcess, VenvPexRequest, create_pex, create_venv_pex
 from pants.backend.python.util_rules.pex_environment import PexEnvironment
 from pants.backend.python.util_rules.pex_from_targets import RequirementsPexRequest

@@ -33,7 +33,7 @@ class Oras(TemplatedExternalTool):
     default_version = "1.3.4"
     # Compute with: `curl -L $URL | tee >(wc -c) >(shasum -a 256) >/dev/null`
     # Pants declares these class attributes without `ClassVar`, so `ty` rejects a `ClassVar` annotation here.
-    default_known_versions = [  # ruff: ignore[mutable-class-default]
+    default_known_versions = [  # ruff: ignore[RUF012]
         "1.3.4|linux_arm64 |15702c6e3a4a56a8bd8ac5c17efdbcab56d9bada661ccbcf017f5b10c1d89399|4238235",
         "1.3.4|linux_x86_64|f27adb935022d94df8dc77719c322dda592c78a0d57a6f7dcdd8d900b248c454|4679642",
         "1.3.4|macos_arm64 |217761a9500242ff473de8656b5aca21136ff39e17e9e61fd8936bbfd902704c|4401355",
@@ -44,7 +44,7 @@ class Oras(TemplatedExternalTool):
         "https://github.com/oras-project/oras/releases/download/v{version}/oras_{version}_{platform}.tar.gz"
     )
     # Go binaries are statically linked, so one Linux build runs on any distribution.
-    default_url_platform_mapping: dict[str, str] = {  # ruff: ignore[mutable-class-default]
+    default_url_platform_mapping: dict[str, str] = {  # ruff: ignore[RUF012]
         "linux_arm64": "linux_arm64",
         "linux_x86_64": "linux_amd64",
         "macos_arm64": "darwin_arm64",

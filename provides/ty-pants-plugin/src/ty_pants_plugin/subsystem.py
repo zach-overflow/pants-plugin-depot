@@ -24,7 +24,7 @@ class Ty(TemplatedExternalTool):
     default_version = "0.0.86"
     # Compute with: `curl -L $URL | tee >(wc -c) >(shasum -a 256) >/dev/null`
     # Pants declares these class attributes without `ClassVar`, so `ty` rejects a `ClassVar` annotation here.
-    default_known_versions = [  # ruff: ignore[mutable-class-default]
+    default_known_versions = [  # ruff: ignore[RUF012]
         "0.0.86|linux_arm64 |ff3f848d01d6849131ed712fc946c026b33a95720408eaece26d28d3c2e52c45|13019630",
         "0.0.86|linux_x86_64|cedbbe26a4f12533cfa728e07c8f053c86c7642548c72e92971e1154a94f3583|14149832",
         "0.0.86|macos_arm64 |ba782554d855aa69ce6ec8fa5898f5256a8603eb81f35d1927434576a434ae4e|12770181",
@@ -33,7 +33,7 @@ class Ty(TemplatedExternalTool):
     version_constraints = ">=0.0.80,<1"
     default_url_template = "https://github.com/astral-sh/ty/releases/download/{version}/ty-{platform}.tar.gz"
     # The musl builds are statically linked, so they run on any glibc or musl based distribution.
-    default_url_platform_mapping: dict[str, str] = {  # ruff: ignore[mutable-class-default]
+    default_url_platform_mapping: dict[str, str] = {  # ruff: ignore[RUF012]
         "linux_arm64": "aarch64-unknown-linux-musl",
         "linux_x86_64": "x86_64-unknown-linux-musl",
         "macos_arm64": "aarch64-apple-darwin",

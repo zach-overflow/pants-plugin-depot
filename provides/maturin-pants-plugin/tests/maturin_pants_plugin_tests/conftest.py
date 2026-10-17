@@ -19,7 +19,7 @@ from maturin_pants_plugin.subsystem import Maturin
 from maturin_pants_plugin.target_types import MaturinWheelTarget
 from pants_plugin_developer_utils.testing_utils import (
     RuleRunnerFactory,
-    rule_runner_factory,  # ruff: ignore[unused-import]
+    rule_runner_factory,  # ruff: ignore[F401]
 )
 
 CRATE_DIR = "crates/hello"
@@ -47,7 +47,7 @@ def make_maturin(**overrides: Any) -> Maturin:
 
 
 @pytest.fixture(scope="function")
-def maturin_rule_runner(rule_runner_factory: RuleRunnerFactory) -> RuleRunner:  # ruff: ignore[redefined-while-unused]
+def maturin_rule_runner(rule_runner_factory: RuleRunnerFactory) -> RuleRunner:  # ruff: ignore[F811]
     """
     `RuleRunner` with every rule the maturin plugin's `package` path needs.
 

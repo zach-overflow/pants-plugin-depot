@@ -18,7 +18,7 @@ class OCIRegistryError(ValueError):
 class OCIRegistryNotFoundError(OCIRegistryError):
     """An `oci_registries` entry names an `@alias` that `[oras].registries` does not define."""
 
-    def __init__(self, alias: str) -> None:  # ruff: ignore[undocumented-public-init]
+    def __init__(self, alias: str) -> None:  # ruff: ignore[D107]
         super().__init__(
             f"There is no OCI registry configured with alias `{alias}`. "
             "Use the `[oras].registries` option to define registry aliases."
@@ -28,7 +28,7 @@ class OCIRegistryNotFoundError(OCIRegistryError):
 class OCIRegistryAddressCollisionError(OCIRegistryError):
     """Two `[oras].registries` entries share one `address`."""
 
-    def __init__(self, first: OCIRegistryOptions, second: OCIRegistryOptions) -> None:  # ruff: ignore[undocumented-public-init]
+    def __init__(self, first: OCIRegistryOptions, second: OCIRegistryOptions) -> None:  # ruff: ignore[D107]
         super().__init__(
             softwrap(
                 f"""

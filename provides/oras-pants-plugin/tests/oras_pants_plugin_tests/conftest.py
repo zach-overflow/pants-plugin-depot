@@ -27,7 +27,7 @@ from oras_pants_plugin.subsystem import Oras
 from oras_pants_plugin.target_types import OCIArtifact
 from pants_plugin_developer_utils.testing_utils import (
     RuleRunnerFactory,
-    rule_runner_factory,  # ruff: ignore[unused-import]
+    rule_runner_factory,  # ruff: ignore[F401]
 )
 
 APP_DIR = "src/app"
@@ -100,7 +100,7 @@ def oras_factory() -> OrasFactory:
 
 
 @pytest.fixture(scope="function")
-def oras_rule_runner(rule_runner_factory: RuleRunnerFactory) -> RuleRunner:  # ruff: ignore[redefined-while-unused]
+def oras_rule_runner(rule_runner_factory: RuleRunnerFactory) -> RuleRunner:  # ruff: ignore[F811]
     """Integration `RuleRunner`: requesting a `BuiltPackage` or `PublishProcesses` downloads the real `oras` (network)."""
     return rule_runner_factory(
         rules=[

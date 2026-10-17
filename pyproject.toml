@@ -15,14 +15,17 @@ lint.extend-select = [
   "ASYNC",
   "BLE",
   "C4",
-  "commented-out-code",
-  "complex-structure",
+  "C901",
+  "COM818",
   "D2",
   "D3",
   "D4",
+  "D101",
+  "D107",
   "DOC",
   "DTZ",
   "EM",
+  "ERA001",
   "EXE",
   "FA",
   "FBT",
@@ -41,71 +44,71 @@ lint.extend-select = [
   "PT",
   "PTH",
   "PYI",
+  "Q004",
   "RET",
   "RSE",
   "RUF",
-  "runtime-cast-value",
   "SLF",
   "SLOT",
   "T10",
   "T20",
+  "TC006",
   "TD",
   "TID25",
-  "trailing-comma-on-bare-tuple",
   "TRY",
-  "undocumented-public-class",
-  "undocumented-public-init",
-  "unnecessary-escaped-quote",
   "W",
   "YTT",
 ]
 # Ignore rules that conflict with the ruff formatter (https://stackoverflow.com/a/77796620).
 lint.ignore = [
   # Explicit `Any` annotations are allowed.
-  "any-type",
-  "avoidable-escaped-quote",
-  "bad-quotes-docstring",
-  "bad-quotes-inline-string",
-  "bad-quotes-multiline-string",
+  "ANN401",
   # Flags the pure `os.path.normpath`.
-  "blocking-path-method-in-async-function",
+  "ASYNC240",
+  "COM812",
+  "COM819",
+  "D206",
+  # Conflicts with `D213`.
+  "D212",
+  "D300",
   # Summary-only docstrings don't need a `Returns` section.
-  "docstring-missing-returns",
-  "docstring-tab-indentation",
+  "DOC201",
+  "E111",
+  "E114",
+  "E117",
+  "E203",
+  "E501",
   # Pants lints each batch of test files in a sandbox without the package's `__init__.py`.
-  "implicit-namespace-package",
-  "indentation-with-invalid-multiple",
-  "indentation-with-invalid-multiple-comment",
-  "line-too-long",
-  "missing-trailing-comma",
-  # Conflicts with `multi-line-summary-second-line` (`D213`).
-  "multi-line-summary-first-line",
-  # Pants paths are strings, so `os.path.join` and friends stay.
-  "os-path-basename",
-  "os-path-dirname",
-  "os-path-join",
-  "over-indented",
-  "prohibited-trailing-comma",
-  "pytest-extraneous-scope-function",
-  "pytest-fixture-param-without-value",
-  "pytest-useless-yield-fixture",
-  "tab-indentation",
+  "INP001",
   # Pants rules take many injected subsystems as parameters.
-  "too-many-arguments",
-  "too-many-positional-arguments",
-  "triple-single-quotes",
+  "PLR0913",
+  "PLR0917",
+  "PT003",
+  "PT019",
+  "PT022",
+  # Pants paths are strings, so `os.path.join` and friends stay.
+  "PTH118",
+  "PTH119",
+  "PTH120",
+  "Q000",
+  "Q001",
+  "Q002",
+  "Q003",
   # Pants `@rule` functions are `async def` by convention, even without awaits.
-  "unused-async",
-  "whitespace-before-punctuation",
+  "RUF029",
+  # Rule codes stay in suppression comments and selectors.
+  "RUF106",
+  "RUF201",
+  "W191",
 ]
 lint.per-file-ignores."provides/*/tests/**/*.py" = [
-  # Don't raise bandit errors on `assert` statements in tests.
-  "assert",
-  # Magic values in test assertions are fine.
-  "magic-value-comparison",
   # Don't require docstrings in tests
-  "undocumented-public-class",
-  "undocumented-public-init",
+  "D101",
+  "D107",
+  # Magic values in test assertions are fine.
+  "PLR2004",
+  # Don't raise bandit errors on `assert` statements in tests.
+  "S101",
 ]
 # Like mypy, accept `__init__` without `-> None` when a parameter is annotated.
 lint.flake8-annotations.mypy-init-return = true
