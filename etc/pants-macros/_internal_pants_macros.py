@@ -73,7 +73,7 @@ def plugin_root_sources(extra_dependencies: list[str] | None = None) -> None:
     python_sources(dependencies=[":pytyped-marker", ":scm-version-for-wheel", *(extra_dependencies or [])], tags=tags)
 
 
-def plugin_wheel(extra_dependencies: list[str] | None = None, include_oci_pex: bool = True) -> None:
+def plugin_wheel(extra_dependencies: list[str] | None = None, include_oci_pex: bool = False) -> None:
     """
     Defines a plugin's `:plugin-whl` `python_distribution` and the targets it packages. Call it once from
     `provides/<plugin-name>/BUILD`. The Publish workflow builds `provides/<plugin-name>:plugin-whl`.
@@ -89,7 +89,7 @@ def plugin_wheel(extra_dependencies: list[str] | None = None, include_oci_pex: b
         extra_dependencies: Further addresses to add to the `python_distribution` `dependencies` field, for example
             `["./src/<plugin_name>/testing_utils"]`.
         include_oci_pex: Whether to also define `:plugin-pex` and `:plugin-oci-artifact`, the plugin as a PEX inside
-            an OCI artifact.
+            an OCI artifact. Defaults to `False`.
     """
     tags = ["plugin_wheel", COMMON_MACRO_TAG]
     pypi_name, root_pkg_name = _plugin_names()
