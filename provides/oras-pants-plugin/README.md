@@ -1,5 +1,7 @@
 # oras-pants-plugin
 
+![PyPI Version](https://img.shields.io/pypi/v/oras-pants-plugin?style=flat&logo=python&logoColor=white&logoSize=auto&color=rgb(162%2C%200%2C%20255))
+
 A [Pantsbuild](https://www.pantsbuild.org/) plugin that wraps the outputs of `package`-able targets, such as
 `pex_binary`, as [OCI artifacts](https://oras.land/docs/concepts/artifact) and publishes them to OCI registries
 with [`oras`](https://oras.land/). Any registry that stores OCI artifacts works: GitHub Container Registry,

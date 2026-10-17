@@ -1,5 +1,7 @@
 # ty-pants-plugin
 
+![PyPI Version](https://img.shields.io/pypi/v/ty-pants-plugin?style=flat&logo=python&logoColor=white&logoSize=auto&color=rgb(162%2C%200%2C%20255))
+
 A [Pantsbuild](https://www.pantsbuild.org/) plugin for type checking Python code with
 [`ty`](https://docs.astral.sh/ty/), the Rust-based type checker from Astral.
 
