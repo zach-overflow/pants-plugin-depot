@@ -1,5 +1,7 @@
 # typos-pants-plugin
 
+![PyPI Version](https://img.shields.io/pypi/v/typos-pants-plugin?style=flat&logo=python&logoColor=white&logoSize=auto&color=rgb(162%2C%200%2C%20255))
+
 A [Pantsbuild](https://www.pantsbuild.org/) plugin that checks and corrects spelling in source code with
 [`typos`](https://github.com/crate-ci/typos), the Rust-based spell checker built for code.
 

@@ -1,5 +1,7 @@
 # pants-plugin-developer-utils
 
+![PyPI Version](https://img.shields.io/pypi/v/pants-plugin-developer-utils?style=flat&logo=python&logoColor=white&logoSize=auto&color=rgb(162%2C%200%2C%20255))
+
 Utilities for writing and testing [Pantsbuild](https://www.pantsbuild.org/) plugins: type aliases for the
 `register.py` hooks, and pytest fixtures around `pants.testutil.rule_runner.RuleRunner`.
 

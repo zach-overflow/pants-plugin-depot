@@ -1,5 +1,7 @@
 # actionlint-pants-plugin
 
+![PyPI Version](https://img.shields.io/pypi/v/actionlint-pants-plugin?style=flat&logo=python&logoColor=white&logoSize=auto&color=rgb(162%2C%200%2C%20255))
+
 A [Pantsbuild](https://www.pantsbuild.org/) plugin that lints GitHub Actions workflow files with
 [`actionlint`](https://github.com/rhysd/actionlint): workflow syntax, `${{ }}` expressions, action inputs,
 runner labels, and the shell scripts in `run:` steps.

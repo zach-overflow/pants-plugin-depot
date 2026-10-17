@@ -1,5 +1,7 @@
 # vcs-versioning-pants-plugin
 
+![PyPI Version](https://img.shields.io/pypi/v/vcs-versioning-pants-plugin?style=flat&logo=python&logoColor=white&logoSize=auto&color=rgb(162%2C%200%2C%20255))
+
 A [Pantsbuild](https://www.pantsbuild.org/) plugin that generates a version module from git tags with
 [`vcs-versioning`](https://pypi.org/project/vcs-versioning/), the core library of
 [`setuptools-scm`](https://setuptools-scm.readthedocs.io/), so no version string has to be committed. Its
