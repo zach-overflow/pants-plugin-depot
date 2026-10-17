@@ -11,7 +11,7 @@ from pants.testutil.rule_runner import QueryRule, RuleRunner
 
 from pants_plugin_developer_utils.testing_utils import (
     RuleRunnerFactory,
-    rule_runner_factory,  # noqa: F401
+    rule_runner_factory,  # ruff: ignore[F401]
 )
 from ty_pants_plugin import check, skip_fields, subsystem
 from ty_pants_plugin.check import TyPartitions, TyRequest
@@ -37,9 +37,10 @@ def make_ty(**overrides: Any) -> Ty:
 
 
 @pytest.fixture(scope="function")
-def ty_rule_runner(rule_runner_factory: RuleRunnerFactory) -> RuleRunner:  # noqa: F811
+def ty_rule_runner(rule_runner_factory: RuleRunnerFactory) -> RuleRunner:  # ruff: ignore[F811]
     """
     Integration `RuleRunner`: downloads the real `ty` binary and builds a real requirements venv (network).
+
     Pins the checked code's interpreter constraints to the interpreter the tests run under.
     """
     rule_runner = rule_runner_factory(

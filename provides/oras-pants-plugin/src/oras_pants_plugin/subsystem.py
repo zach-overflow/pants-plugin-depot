@@ -1,6 +1,6 @@
 """The `oras` subsystem: where the binary comes from and how `pants package` and `pants publish` run it."""
 
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, override
 
 from pants.core.goals.resolves import ExportableTool
 from pants.core.util_rules.external_tool import TemplatedExternalTool
@@ -20,8 +20,10 @@ if TYPE_CHECKING:
 
 class Oras(TemplatedExternalTool):
     """
-    The configuration and tooling wrapper for the `oras` binary, which builds `oci_artifact` targets into OCI image
-    layouts and copies them to OCI registries. See also: https://oras.land/docs/
+    The configuration and tooling wrapper for the `oras` binary.
+
+    It builds `oci_artifact` targets into OCI image layouts and copies them to OCI registries.
+    See also: https://oras.land/docs/
     """
 
     options_scope = "oras"
@@ -31,7 +33,7 @@ class Oras(TemplatedExternalTool):
     default_version = "1.3.4"
     # Compute with: `curl -L $URL | tee >(wc -c) >(shasum -a 256) >/dev/null`
     # Pants declares these class attributes without `ClassVar`, so `ty` rejects a `ClassVar` annotation here.
-    default_known_versions = [  # noqa: RUF012
+    default_known_versions = [  # ruff: ignore[RUF012]
         "1.3.4|linux_arm64 |15702c6e3a4a56a8bd8ac5c17efdbcab56d9bada661ccbcf017f5b10c1d89399|4238235",
         "1.3.4|linux_x86_64|f27adb935022d94df8dc77719c322dda592c78a0d57a6f7dcdd8d900b248c454|4679642",
         "1.3.4|macos_arm64 |217761a9500242ff473de8656b5aca21136ff39e17e9e61fd8936bbfd902704c|4401355",
@@ -42,7 +44,7 @@ class Oras(TemplatedExternalTool):
         "https://github.com/oras-project/oras/releases/download/v{version}/oras_{version}_{platform}.tar.gz"
     )
     # Go binaries are statically linked, so one Linux build runs on any distribution.
-    default_url_platform_mapping: dict[str, str] = {  # noqa: RUF012
+    default_url_platform_mapping: dict[str, str] = {  # ruff: ignore[RUF012]
         "linux_arm64": "linux_arm64",
         "linux_x86_64": "linux_amd64",
         "macos_arm64": "darwin_arm64",
@@ -117,6 +119,7 @@ class Oras(TemplatedExternalTool):
     # `oras` reads the credentials from `$DOCKER_CONFIG/config.json` and runs the credential helpers from `PATH`.
     _REGISTRY_ENV_VAR_NAMES: ClassVar[tuple[str, ...]] = ("PATH", "HOME", "DOCKER_CONFIG")
 
+    @override
     def generate_exe(self, plat: Platform) -> str:
         """The release tarball extracts the binary to its root, next to the license."""
         return "./oras"

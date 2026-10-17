@@ -146,7 +146,7 @@ def test_passes_on_valid_workflow(actionlint_rule_runner: RuleRunner) -> None:
     assert result.exit_code == 0, result.stdout + result.stderr
     assert result.linter_name == "actionlint"
     assert result.partition_description is None
-    assert result.stdout == ""
+    assert not result.stdout
 
 
 def test_reports_workflow_problems(actionlint_rule_runner: RuleRunner) -> None:

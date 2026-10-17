@@ -3,7 +3,7 @@ from textwrap import dedent
 
 import pytest
 
-from pants_plugin_developer_utils.testing_utils import rule_runner_factory  # noqa: F401
+from pants_plugin_developer_utils.testing_utils import rule_runner_factory  # ruff: ignore[F401]
 
 type TomlFactory = Callable[[str, str, str | None], tuple[str, str]]
 """The type alias for the `pyproject_toml_factory` fixture for dynamic mock `pyproject.toml` generation."""

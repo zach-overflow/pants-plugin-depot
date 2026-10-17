@@ -19,14 +19,14 @@ from pyproject_fmt_pants_plugin.subsystem import PyprojectFmt
 @pytest.mark.parametrize(
     ("skip", "files", "expected"),
     [
-        (False, tuple(), []),
+        (False, (), []),
         (False, ("pyproject.toml", "bar/pyproject.toml"), [("bar/pyproject.toml", "pyproject.toml")]),
-        (True, tuple(), []),
+        (True, (), []),
         (True, ("pyproject.toml", "bar/pyproject.toml"), []),
     ],
 )
 def test_common_partition_pyproject_toml_inputs(
-    skip: bool, files: Iterable[str], expected: list[tuple[str, ...]]
+    *, skip: bool, files: Iterable[str], expected: list[tuple[str, ...]]
 ) -> None:
     actual = common_partition_pyproject_toml_inputs(skip=skip, files=files)
     # `Partitions` are not comparable: each single partition holds a distinct `_EmptyMetadata` instance.

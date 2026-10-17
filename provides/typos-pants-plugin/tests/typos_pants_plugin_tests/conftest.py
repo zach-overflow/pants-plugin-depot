@@ -14,7 +14,7 @@ from pants.testutil.rule_runner import QueryRule, RuleRunner
 
 from pants_plugin_developer_utils.testing_utils import (
     RuleRunnerFactory,
-    rule_runner_factory,  # noqa: F401
+    rule_runner_factory,  # ruff: ignore[F401]
 )
 from typos_pants_plugin import subsystem
 from typos_pants_plugin.goals import common, fix, lint
@@ -54,7 +54,7 @@ def typos_factory() -> TyposFactory:
 
 
 @pytest.fixture(scope="function")
-def typos_rule_runner(rule_runner_factory: RuleRunnerFactory) -> RuleRunner:  # noqa: F811
+def typos_rule_runner(rule_runner_factory: RuleRunnerFactory) -> RuleRunner:  # ruff: ignore[F811]
     """Integration `RuleRunner`: downloads the real `typos` binary (network) and runs it on the written files."""
     return rule_runner_factory(
         rules=[

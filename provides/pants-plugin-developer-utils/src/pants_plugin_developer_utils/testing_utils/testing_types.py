@@ -26,10 +26,7 @@ type RuleRunnerCollectedRules = Iterable[Rule | UnionRule | QueryRule]
 
 
 class RuleRunnerOptionalKwargs(TypedDict):
-    """
-    Collection of keyword argument names and their associated types which may be optionally provided to the
-    `pants.testutil.rule_runner.RuleRunner` constructor.
-    """
+    """Optional keyword arguments of the `pants.testutil.rule_runner.RuleRunner` constructor, with their types."""
 
     target_types: NotRequired[CollectedTargetTypes | None]
     objects: NotRequired[dict[str, Any] | None]

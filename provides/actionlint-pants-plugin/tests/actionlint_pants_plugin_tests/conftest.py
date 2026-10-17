@@ -18,7 +18,7 @@ from actionlint_pants_plugin.subsystem import Actionlint
 from actionlint_pants_plugin.target_types import GitHubWorkflowSourcesGeneratorTarget, GitHubWorkflowSourceTarget
 from pants_plugin_developer_utils.testing_utils import (
     RuleRunnerFactory,
-    rule_runner_factory,  # noqa: F401
+    rule_runner_factory,  # ruff: ignore[F401]
 )
 
 WORKFLOWS_DIR = ".github/workflows"
@@ -58,7 +58,7 @@ def actionlint_factory() -> ActionlintFactory:
 
 
 @pytest.fixture(scope="function")
-def actionlint_rule_runner(rule_runner_factory: RuleRunnerFactory) -> RuleRunner:  # noqa: F811
+def actionlint_rule_runner(rule_runner_factory: RuleRunnerFactory) -> RuleRunner:  # ruff: ignore[F811]
     """Integration `RuleRunner`: downloads the real `actionlint` and `shellcheck` binaries (network)."""
     return rule_runner_factory(
         rules=[

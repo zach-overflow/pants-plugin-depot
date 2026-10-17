@@ -18,7 +18,7 @@ class OCIRegistryError(ValueError):
 class OCIRegistryNotFoundError(OCIRegistryError):
     """An `oci_registries` entry names an `@alias` that `[oras].registries` does not define."""
 
-    def __init__(self, alias: str) -> None:  # noqa: D107
+    def __init__(self, alias: str) -> None:  # ruff: ignore[D107]
         super().__init__(
             f"There is no OCI registry configured with alias `{alias}`. "
             "Use the `[oras].registries` option to define registry aliases."
@@ -28,7 +28,7 @@ class OCIRegistryNotFoundError(OCIRegistryError):
 class OCIRegistryAddressCollisionError(OCIRegistryError):
     """Two `[oras].registries` entries share one `address`."""
 
-    def __init__(self, first: OCIRegistryOptions, second: OCIRegistryOptions) -> None:  # noqa: D107
+    def __init__(self, first: OCIRegistryOptions, second: OCIRegistryOptions) -> None:  # ruff: ignore[D107]
         super().__init__(
             softwrap(
                 f"""
@@ -53,12 +53,14 @@ class OCIRegistryOptions:
     def from_dict(cls, alias: str, options: Mapping[str, Any]) -> Self:
         unknown = sorted(set(options) - cls._KNOWN_KEYS)
         if unknown:
-            raise OCIRegistryError(
+            msg = (
                 f"Unknown keys {unknown} in `[oras].registries` entry `{alias}`; known keys: {sorted(cls._KNOWN_KEYS)}."
             )
+            raise OCIRegistryError(msg)
         address = options.get("address")
         if not isinstance(address, str) or not address:
-            raise OCIRegistryError(f"`[oras].registries` entry `{alias}` must set a non-empty `address` string.")
+            msg = f"`[oras].registries` entry `{alias}` must set a non-empty `address` string."
+            raise OCIRegistryError(msg)
         return cls(address=address, alias=alias, default=bool(options.get("default", alias == "default")))
 
 
@@ -88,6 +90,9 @@ class OCIRegistries:
         The registries `names` refer to, in order and without duplicates.
 
         A name is a configured `@alias`, a configured or verbatim address, or `ALL_DEFAULT_REGISTRIES`.
+
+        Raises:
+            OCIRegistryNotFoundError: If an `@alias` names no configured registry.
         """
         resolved: dict[str, OCIRegistryOptions] = {}
         for name in names:

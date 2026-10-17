@@ -6,20 +6,22 @@ backends. `ty` is a static binary, so unlike mypy it is downloaded rather than i
 pyright, it resolves third-party imports from a virtual environment Pants builds from the checked targets'
 requirements, and first-party imports from the Pants source roots.
 
-See also:
+See Also:
     https://www.pantsbuild.org/stable/docs/writing-plugins/common-plugin-tasks/add-a-typechecker
 """
 
 import os
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from pants.backend.python.subsystems.setup import PythonSetup
 from pants.backend.python.target_types import InterpreterConstraintsField, PythonResolveField, PythonSourceField
 from pants.backend.python.util_rules import pex_from_targets
 from pants.backend.python.util_rules.interpreter_constraints import InterpreterConstraints
-from pants.backend.python.util_rules.partition import _partition_by_interpreter_constraints_and_resolve
+
+# Pants' own `ty`-style partitioning helper has no public equivalent.
+from pants.backend.python.util_rules.partition import _partition_by_interpreter_constraints_and_resolve  # ruff: ignore[PLC2701]
 from pants.backend.python.util_rules.pex import PexRequest, VenvPexProcess, VenvPexRequest, create_pex, create_venv_pex
 from pants.backend.python.util_rules.pex_environment import PexEnvironment
 from pants.backend.python.util_rules.pex_from_targets import RequirementsPexRequest
@@ -36,7 +38,7 @@ from pants.engine.intrinsics import execute_process, get_digest_contents, merge_
 from pants.engine.platform import Platform
 from pants.engine.process import Process, ProcessCacheScope, execute_process_or_raise
 from pants.engine.rules import collect_rules, concurrently, implicitly, rule
-from pants.engine.target import CoarsenedTargets, CoarsenedTargetsRequest, FieldSet, Target
+from pants.engine.target import CoarsenedTargets, CoarsenedTargetsRequest, Field, FieldSet, Target
 from pants.engine.unions import UnionRule
 from pants.option.global_options import GlobalOptions
 from pants.util.logging import LogLevel
@@ -54,7 +56,7 @@ if TYPE_CHECKING:
 class TyFieldSet(FieldSet):
     """Fields required for a target to be eligible as a subject for `ty` type checking."""
 
-    required_fields = (PythonSourceField,)
+    required_fields: ClassVar[tuple[type[Field], ...]] = (PythonSourceField,)
 
     sources: PythonSourceField
     resolve: PythonResolveField

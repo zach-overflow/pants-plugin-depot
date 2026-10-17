@@ -114,6 +114,7 @@ def _add_mock_file(mock_files: dict[str, str], entry: tuple[str, str]) -> None:
 @pytest.mark.parametrize("has_standalone_config", [False, True])
 @pytest.mark.parametrize("has_nested_project", [False, True])
 def test_run_pyproject_fmt_formatting_no_tool_section(
+    *,
     fmt_rule_runner: RuleRunner,
     dedicated_pyproject_fmt_config: tuple[str, str],
     pyproject_toml_factory: TomlFactory,
@@ -125,7 +126,7 @@ def test_run_pyproject_fmt_formatting_no_tool_section(
     if has_nested_project:
         projects["nested/thing/pyproject.toml"] = "nested-project"
 
-    src_files: dict[str, str] = dict()
+    src_files: dict[str, str] = {}
     if has_standalone_config:
         _add_mock_file(mock_files=src_files, entry=dedicated_pyproject_fmt_config)
     for filepath, project_name in projects.items():
@@ -153,6 +154,7 @@ def test_run_pyproject_fmt_formatting_no_tool_section(
     ],
 )
 def test_run_pyproject_fmt_formatting_with_args_option(
+    *,
     fmt_rule_runner: RuleRunner,
     dedicated_pyproject_fmt_config: tuple[str, str],
     pyproject_toml_factory: TomlFactory,
@@ -161,7 +163,7 @@ def test_run_pyproject_fmt_formatting_with_args_option(
 ) -> None:
     """Validates `[pyproject-fmt].args` reaches `pyproject-fmt` and that a `pyproject-fmt.toml` takes precedence."""
     _set_options(fmt_rule_runner, f"--pyproject-fmt-args={args!r}")
-    src_files: dict[str, str] = dict()
+    src_files: dict[str, str] = {}
     if has_standalone_config:
         _add_mock_file(mock_files=src_files, entry=dedicated_pyproject_fmt_config)
     _add_mock_file(mock_files=src_files, entry=pyproject_toml_factory("pyproject.toml", "root-project", None))

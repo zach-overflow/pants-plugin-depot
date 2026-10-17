@@ -102,7 +102,7 @@ def test_construct_maturin_build_argv(overrides: dict[str, Any], expected_suffix
         ),
     ],
 )
-def test_construct_maturin_upload_argv(repository: str, skip_existing: bool, expected: tuple[str, ...]) -> None:
+def test_construct_maturin_upload_argv(*, repository: str, skip_existing: bool, expected: tuple[str, ...]) -> None:
     actual = construct_maturin_upload_argv(make_maturin(skip_existing=skip_existing), repository, ("a.whl", "b.whl"))
 
     assert actual == expected

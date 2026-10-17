@@ -1,7 +1,10 @@
 """
-Implements the `package` goal for `oci_artifact` targets: the packaged outputs of the `packages` targets are pushed
-into an OCI image layout directory with `oras push --oci-layout`.
-See also:
+Implements the `package` goal for `oci_artifact` targets.
+
+The packaged outputs of the `packages` targets are pushed into an OCI image layout directory with
+`oras push --oci-layout`.
+
+See Also:
     https://www.pantsbuild.org/stable/docs/writing-plugins/common-plugin-tasks/add-a-package-type
     https://github.com/opencontainers/image-spec/blob/main/image-layout.md
 """
@@ -70,7 +73,12 @@ def construct_oras_push_argv(
 
 @rule(desc="Package an `oci_artifact` target into an OCI image layout with `oras`", level=LogLevel.DEBUG)
 async def package_oci_artifact(field_set: OCIArtifactPackageFieldSet) -> BuiltPackage:
-    """Builds every `packages` target, then pushes their outputs into a layout at `output_path`, with every tag."""
+    """
+    Builds every `packages` target, then pushes their outputs into a layout at `output_path`, with every tag.
+
+    Raises:
+        InvalidTargetException: If the `packages` targets produce no files to package.
+    """
     targets = await resolve_targets(**implicitly(field_set.packages.to_unparsed_address_inputs()))
     field_sets_per_target = await find_valid_field_sets(
         FieldSetsPerTargetRequest(PackageFieldSet, targets), **implicitly()
@@ -81,10 +89,11 @@ async def package_oci_artifact(field_set: OCIArtifactPackageFieldSet) -> BuiltPa
     )
     files = tuple(artifact.relpath for package in packages for artifact in package.artifacts if artifact.relpath)
     if not files:
-        raise InvalidTargetException(
+        msg = (
             f"The `{field_set.packages.alias}` field of target {field_set.address} produced no files to package "
             "into an OCI artifact; list targets that `package` builds, such as a `pex_binary`."
         )
+        raise InvalidTargetException(msg)
 
     input_digest = await merge_digests(MergeDigests(package.digest for package in packages))
     tags = await resolve_oci_artifact_tags(OCIArtifactTagsRequest.from_field_set(field_set))

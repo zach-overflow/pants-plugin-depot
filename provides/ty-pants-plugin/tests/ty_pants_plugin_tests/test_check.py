@@ -94,7 +94,7 @@ def test_generate_argv_full() -> None:
         ([], [b"[tool.ty.environment]\npython-version = '3.12'\n"], True),
     ],
 )
-def test_python_version_configured(args: list[str], config_contents: list[bytes], expected: bool) -> None:
+def test_python_version_configured(*, args: list[str], config_contents: list[bytes], expected: bool) -> None:
     assert python_version_configured(make_ty(args=args), config_contents) is expected
 
 
@@ -234,7 +234,7 @@ def test_unresolved_first_party_import_fails(ty_rule_runner: RuleRunner) -> None
 
 @pytest.mark.parametrize("has_requirement", [True, False])
 def test_third_party_imports_resolve_from_the_requirements_venv(
-    ty_rule_runner: RuleRunner, has_requirement: bool
+    *, ty_rule_runner: RuleRunner, has_requirement: bool
 ) -> None:
     # Without inference the `python_requirement` is only a dependency when `dependencies` names it.
     set_ty_options(ty_rule_runner, "--no-python-infer-imports")
