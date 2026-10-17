@@ -2,6 +2,18 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [pants-plugin-developer-utils-v0.2.2](https://github.com/zach-overflow/pants-plugin-depot/compare/3c1ef13a6b9c64ed86ae1b54955d71ecf9ecf2da..pants-plugin-developer-utils-v0.2.2) - 2026-10-17
+
+#### Bug Fixes
+
+- Add and enforce broader ruff rules (#30) - ([3c1ef13](https://github.com/zach-overflow/pants-plugin-depot/commit/3c1ef13a6b9c64ed86ae1b54955d71ecf9ecf2da)) - [@zach-overflow](https://github.com/zach-overflow)
+
+#### Documentation
+
+- Add pypi version badge to plugin-specific READMEs (#31) - ([736101d](https://github.com/zach-overflow/pants-plugin-depot/commit/736101ddc837247ecebb83d9fdee901ce1941f53)) - [@zach-overflow](https://github.com/zach-overflow)
+
+- - -
+
 ## [pants-plugin-developer-utils-v0.2.1](https://github.com/zach-overflow/pants-plugin-depot/compare/2d330d68d9c90e4a22e0fa5788173219f719931d..pants-plugin-developer-utils-v0.2.1) - 2026-10-15
 
 #### Internal Tooling / Development
