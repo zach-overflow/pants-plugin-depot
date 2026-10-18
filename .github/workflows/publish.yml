@@ -75,7 +75,7 @@ jobs:
         run: .github/ci_scripts/publish_scripts/build-wheel.sh
 
       - name: upload-wheel
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wheel
           path: dist/*-${{ needs.setup.outputs.version }}-py3-none-any.whl
@@ -83,7 +83,7 @@ jobs:
 
       - name: upload-pants-log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pants-log
           path: .pants.d/workdir/pants.log
@@ -159,7 +159,7 @@ jobs:
 
       - name: upload-pants-log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pants-log-publish-ghcr
           path: .pants.d/workdir/pants.log
