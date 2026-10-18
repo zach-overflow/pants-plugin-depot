@@ -57,7 +57,7 @@ jobs:
             exit 1
           fi
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # cog needs the full history and tags to find each plugin's latest release tag.
           fetch-depth: 0
@@ -82,7 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # vcs-versioning derives each wheel's version from the plugin's tags and the distance to HEAD; a
           # shallow clone has neither.
@@ -137,7 +137,7 @@ jobs:
       # 'https://github.com'", so check the token first and say what is wrong with it. The check is a
       # script in the repo, so fetch it with the default token before the RELEASE_TOKEN checkout.
       - name: checkout-ci-scripts
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: check-release-token
@@ -145,7 +145,7 @@ jobs:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: .github/ci_scripts/release_scripts/check-release-token.sh
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           # The default branch requires pull requests, which the built-in GITHUB_TOKEN cannot bypass.
@@ -191,7 +191,7 @@ jobs:
       contents: read # a job-level block replaces the workflow default; checkout needs it
     steps:
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: dispatch-publish
         env:
           GH_TOKEN: ${{ github.token }}
