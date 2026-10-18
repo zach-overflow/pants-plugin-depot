@@ -36,7 +36,7 @@ jobs:
       version: ${{ steps.tag.outputs.version }}
     steps:
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: validate-release-tag
         id: tag
         env:
@@ -51,7 +51,7 @@ jobs:
       # The tag sits on HEAD, so vcs-versioning resolves exactly `<version>` (no dev or local suffix). It
       # needs the full history and every tag to run `git describe`.
       - name: checkout-release-tag
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ inputs.tag }}
           fetch-depth: 0
@@ -126,7 +126,7 @@ jobs:
     steps:
       # Same checkout as build-wheel: vcs-versioning tags the artifact from the tag on HEAD.
       - name: checkout-release-tag
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ inputs.tag }}
           fetch-depth: 0
@@ -177,7 +177,7 @@ jobs:
     steps:
       # Before download-wheel: checkout cleans the workspace, which would discard the wheel.
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: download-wheel
         uses: actions/download-artifact@v8

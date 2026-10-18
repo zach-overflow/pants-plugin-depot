@@ -19,7 +19,7 @@ jobs:
     steps:
       - name: Checkout code
         # cog verify reads cog.toml (e.g. custom [commit_types]) from the working directory.
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Install cog
         # v4.2.0 pins cog 7.0.0 (the floating v4 tag lags behind and ships an older cog that may not
         # parse this repo's cog.toml).
