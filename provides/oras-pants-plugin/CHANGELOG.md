@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [oras-pants-plugin-v0.3.2](https://github.com/zach-overflow/pants-plugin-depot/compare/be80c57c16fbf8e47432c12b1be0be5f54bbc545..oras-pants-plugin-v0.3.2) - 2026-10-17
+
+#### Bug Fixes
+
+- (**builds**) Opt out of `oci_artifact` build and publish for all but `oras` plugin (#32) - ([be80c57](https://github.com/zach-overflow/pants-plugin-depot/commit/be80c57c16fbf8e47432c12b1be0be5f54bbc545)) - [@zach-overflow](https://github.com/zach-overflow)
+
+- - -
+
 ## [oras-pants-plugin-v0.3.1](https://github.com/zach-overflow/pants-plugin-depot/compare/3c1ef13a6b9c64ed86ae1b54955d71ecf9ecf2da..oras-pants-plugin-v0.3.1) - 2026-10-17
 
 #### Bug Fixes

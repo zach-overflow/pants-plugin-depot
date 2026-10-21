@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [vcs-versioning-pants-plugin-v0.2.2](https://github.com/zach-overflow/pants-plugin-depot/compare/2fd7f291b0f2bf6891e5b584e980c546f32f3eae..vcs-versioning-pants-plugin-v0.2.2) - 2026-10-21
+
+#### Bug Fixes
+
+- Bump deps affected by CA compromise (#41) - ([2fd7f29](https://github.com/zach-overflow/pants-plugin-depot/commit/2fd7f291b0f2bf6891e5b584e980c546f32f3eae)) - [@zach-overflow](https://github.com/zach-overflow)
+
+- - -
+
 ## [vcs-versioning-pants-plugin-v0.2.1](https://github.com/zach-overflow/pants-plugin-depot/compare/3c1ef13a6b9c64ed86ae1b54955d71ecf9ecf2da..vcs-versioning-pants-plugin-v0.2.1) - 2026-10-17
 
 #### Bug Fixes
