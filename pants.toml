@@ -89,6 +89,15 @@ allow_publish = false
 [python-bootstrap]
 search_path = ["<PYENV>", "<ASDF>", "<PATH>"]
 
+[pex-cli]
+version = "v2.104.1"
+known_versions = [
+  "v2.104.1|macos_x86_64|09b82471a777606cc1b74af13c3a4c8d09982dfb2d448d5dd0ce5d408ea1035b|5408285",
+  "v2.104.1|macos_arm64|09b82471a777606cc1b74af13c3a4c8d09982dfb2d448d5dd0ce5d408ea1035b|5408285",
+  "v2.104.1|linux_x86_64|09b82471a777606cc1b74af13c3a4c8d09982dfb2d448d5dd0ce5d408ea1035b|5408285",
+  "v2.104.1|linux_arm64|09b82471a777606cc1b74af13c3a4c8d09982dfb2d448d5dd0ce5d408ea1035b|5408285",
+]
+
 [python]
 resolver = "pex"
 enable_resolves = true

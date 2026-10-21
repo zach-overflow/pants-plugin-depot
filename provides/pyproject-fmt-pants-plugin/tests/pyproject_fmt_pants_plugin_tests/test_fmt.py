@@ -12,6 +12,19 @@ from pyproject_fmt_pants_plugin.goals import common, fmt
 from pyproject_fmt_pants_plugin.goals.fmt import PyprojectFmtRequest
 from pyproject_fmt_pants_plugin_tests.conftest import TomlFactory
 
+_PEX_SHA256 = "09b82471a777606cc1b74af13c3a4c8d09982dfb2d448d5dd0ce5d408ea1035b"
+_PEX_SIZE = 5408285
+PEX_CLI_OPTIONS = (
+    "--pex-cli-version=v2.104.1",
+    "--pex-cli-known-versions="
+    + str(
+        [
+            f"v2.104.1|{platform}|{_PEX_SHA256}|{_PEX_SIZE}"
+            for platform in ("macos_x86_64", "macos_arm64", "linux_x86_64", "linux_arm64")
+        ]
+    ),
+)
+
 
 @pytest.fixture(scope="function")
 def fmt_rule_runner(rule_runner_factory: RuleRunnerFactory) -> RuleRunner:
@@ -33,8 +46,11 @@ def fmt_rule_runner(rule_runner_factory: RuleRunnerFactory) -> RuleRunner:
 
 def _set_options(rule_runner: RuleRunner, *extra_options: str) -> None:
     """Sets the `RuleRunner` options; `set_options` replaces rather than extends the previous ones."""
-    # Mirror `[python].pip_version` in `pants.toml`: Pants' default pip predates CPython 3.14.
-    rule_runner.set_options(["--python-pip-version=latest", *extra_options], env_inherit={"PATH", "PYENV_ROOT", "HOME"})
+    # Mirror `[python].pip_version` and `[pex-cli]` in `pants.toml`: the bundled lockfile records a pip version
+    # that Pants' default pex cannot parse.
+    rule_runner.set_options(
+        [*PEX_CLI_OPTIONS, "--python-pip-version=latest", *extra_options], env_inherit={"PATH", "PYENV_ROOT", "HOME"}
+    )
 
 
 @pytest.fixture(scope="function")
