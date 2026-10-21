@@ -85,8 +85,8 @@
   "only_wheels": [],
   "overridden": [],
   "path_mappings": {},
-  "pex_version": "2.97.1",
-  "pip_version": "26.1.2",
+  "pex_version": "2.104.1",
+  "pip_version": "26.2.2",
   "prefer_older_binary": false,
   "requirements": [
     "maturin<2,>=1.15.0"

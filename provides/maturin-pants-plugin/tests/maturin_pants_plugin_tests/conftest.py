@@ -22,6 +22,19 @@ from pants_plugin_developer_utils.testing_utils import (
     rule_runner_factory,  # ruff: ignore[F401]
 )
 
+_PEX_SHA256 = "09b82471a777606cc1b74af13c3a4c8d09982dfb2d448d5dd0ce5d408ea1035b"
+_PEX_SIZE = 5408285
+PEX_CLI_OPTIONS = (
+    "--pex-cli-version=v2.104.1",
+    "--pex-cli-known-versions="
+    + str(
+        [
+            f"v2.104.1|{platform}|{_PEX_SHA256}|{_PEX_SIZE}"
+            for platform in ("macos_x86_64", "macos_arm64", "linux_x86_64", "linux_arm64")
+        ]
+    ),
+)
+
 CRATE_DIR = "crates/hello"
 """Directory of the fake crate written by the `bin_crate_files` fixture."""
 
@@ -68,10 +81,11 @@ def maturin_rule_runner(rule_runner_factory: RuleRunnerFactory) -> RuleRunner:  
         ],
         target_types=[MaturinWheelTarget, FileTarget],
     )
-    # Mirror `[python].pip_version` in `pants.toml`: Pants' default pip predates CPython 3.14.
+    # Mirror `[python].pip_version` and `[pex-cli]` in `pants.toml`: the bundled lockfile records a pip version
+    # that Pants' default pex cannot parse.
     # `bin` bindings need neither pyo3 nor a target interpreter, so the fake crate builds in seconds.
     rule_runner.set_options(
-        ["--python-pip-version=latest", "--maturin-interpreter=[]", "--maturin-bindings=bin"],
+        [*PEX_CLI_OPTIONS, "--python-pip-version=latest", "--maturin-interpreter=[]", "--maturin-bindings=bin"],
         env_inherit={"PATH", "HOME", "PYENV_ROOT"},
     )
     return rule_runner
