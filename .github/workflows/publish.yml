@@ -1,9 +1,9 @@
 name: Publish
 run-name: Publish ${{ inputs.tag }}
 
-# Builds and publishes one plugin from its `<plugin-name>-vMAJOR.MINOR.PATCH` tag: the wheel to PyPI, then
-# the plugin as a PEX inside an OCI artifact to GitHub Container Registry (the in-repo
-# `oras-pants-plugin` publishes it), and finally the GitHub release. Normally dispatched by the Release
+# Builds and publishes one plugin from its `<plugin-name>-vMAJOR.MINOR.PATCH` tag: the wheel to PyPI, then,
+# for plugins that define one, the plugin as a PEX inside an OCI artifact to GitHub Container Registry (the
+# in-repo `oras-pants-plugin` publishes it), and finally the GitHub release. Normally dispatched by the Release
 # workflow, once per tag, right after it drafts the GitHub release. It is dispatch-only: Release pushes
 # its tags with an admin token, so a `push` trigger would fire a second run per tag, and a `workflow_call`
 # hand-off would break PyPI trusted publishing, which rejects reusable workflows.
@@ -114,8 +114,10 @@ jobs:
 
   # Publishes `provides/<plugin-name>:plugin-oci-artifact` (see `_plugin_oci_pex` in
   # `etc/pants-macros/_internal_pants_macros.py`) to `ghcr.io/<owner>/<repo>/<plugin-name>:<version>` and
-  # `:latest`, dogfooding `oras-pants-plugin`. It runs after the PyPI publish, so the `pypi` environment's
-  # approval gates it too. Pushing the same tag again is harmless: the artifact is content-addressed.
+  # `:latest`, dogfooding `oras-pants-plugin`. Only plugins built with `plugin_wheel(include_oci_pex=True)`
+  # define that target; for the others the publish step is a no-op, so `publish-release` still runs. It runs
+  # after the PyPI publish, so the `pypi` environment's approval gates it too. Pushing the same tag again is
+  # harmless: the artifact is content-addressed.
   publish-ghcr:
     name: publish-ghcr
     needs: [setup, publish-pypi]
@@ -151,6 +153,7 @@ jobs:
 
       # `pants publish` builds the wheel, the PEX and the OCI image layout, then copies the layout to
       # ghcr.io. `[oras].allow_publish` is false in pants.toml and true in pants.ci.toml, so only CI pushes.
+      # The script exits 0 without publishing when the plugin defines no `:plugin-oci-artifact` target.
       - name: publish-oci-artifact
         env:
           PACKAGE: ${{ needs.setup.outputs.package }}
@@ -167,7 +170,8 @@ jobs:
   # Attach the wheel to the DRAFT release that Release's `approve-and-tag` created, then publish it.
   # Releases are immutable once published (assets + tag locked), so the asset must land while it is still
   # a draft; against an already-published release this job only verifies the wheel is attached. It waits
-  # for the OCI artifact too, so a published release means every artifact of the version is out.
+  # for the OCI artifact too (when the plugin has one), so a published release means every artifact of the
+  # version is out.
   publish-release:
     name: publish-release
     needs: [publish-pypi, publish-ghcr]

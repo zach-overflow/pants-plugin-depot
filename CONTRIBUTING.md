@@ -16,8 +16,9 @@ Each plugin is a separate Python distribution in its own directory under the top
 ```
 provides/
   <plugin-name>/
-    BUILD            # `plugin_wheel()`: the `plugin-whl` python_distribution, plus the `plugin-pex` pex_binary and
-                     # the `plugin-oci-artifact` oci_artifact that publish the plugin as a PEX to ghcr.io
+    BUILD            # `plugin_wheel()`: the `plugin-whl` python_distribution; with `include_oci_pex=True` (only
+                     # oras-pants-plugin today) also the `plugin-pex` pex_binary and the `plugin-oci-artifact`
+                     # oci_artifact that publish the plugin as a PEX to ghcr.io
     version.txt      # generated from the plugin's git tags at build time, the OCI artifact's tag; never committed
     pyproject.toml   # packaging metadata and runtime dependencies of this plugin (the version comes from git tags)
     README.md
@@ -47,7 +48,7 @@ pants fmt fix ::                        # ruff, shfmt, taplo, typos, BUILD file 
 pants lint ::                           # actionlint, ruff, shellcheck, shfmt, taplo, typos, yamllint
 pants check ::                          # ty
 pants test ::                           # pytest
-pants package ::                        # build every plugin's wheel, PEX and OCI image layout -> dist/
+pants package ::                        # build every plugin's wheel (and oras-pants-plugin's PEX and OCI image layout) -> dist/
 pants publish ::                        # skipped locally: `[oras].allow_publish` is only true in pants.ci.toml
 pants generate-lockfiles                # regenerate etc/3rdparty/python/plugin-lockfile.json
 pants generate-lockfiles --resolve=vcs-versioning   # regenerate the bundled vcs-versioning tool lockfile

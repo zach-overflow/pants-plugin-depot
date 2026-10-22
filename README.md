@@ -60,13 +60,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 Each plugin is released on its own, under a `<plugin-name>-vX.Y.Z` tag. Release notes live in each plugin's
 `CHANGELOG.md` and on the [GitHub releases page](https://github.com/zach-overflow/pants-plugin-depot/releases).
 
-Every release publishes the plugin's wheel to PyPI and, dogfooding `oras-pants-plugin`, the plugin as a
-[PEX](https://docs.pex-tool.org/) inside an OCI artifact to GitHub Container Registry, tagged with the version and
-`latest`. The PEX holds the plugin's wheel and `pants-plugin-developer-utils` only; it imports `pants` from the
-interpreter that runs it.
+Every release publishes the plugin's wheel to PyPI. `oras-pants-plugin` releases also publish, dogfooding the
+plugin itself, the plugin as a [PEX](https://docs.pex-tool.org/) inside an OCI artifact to GitHub Container
+Registry, tagged with the version and `latest`. The PEX holds the plugin's wheel and
+`pants-plugin-developer-utils` only; it imports `pants` from the interpreter that runs it.
 
 ```bash
-oras pull ghcr.io/zach-overflow/pants-plugin-depot/<plugin-name>:X.Y.Z   # restores <plugin-name>.pex
+oras pull ghcr.io/zach-overflow/pants-plugin-depot/oras-pants-plugin:X.Y.Z   # restores oras-pants-plugin.pex
 ```
 
 ## Bug Reports / Feature Requests
