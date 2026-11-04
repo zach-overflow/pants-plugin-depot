@@ -68,6 +68,8 @@ args = ["--column-width=120", "--indent=2", "--keep-full-version"]
 | :----- | :----- | :----- |
 | `0.x`  | `2.33` | `3.14` |
 
+Compatible with and tested against Pants `2.33.2`.
+
 Pants loads plugins into its own interpreter, so the plugin requires the Python version Pants runs on.
 
 ## Releases

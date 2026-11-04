@@ -168,6 +168,8 @@ release's `oras_<version>_checksums.txt` lists the same checksums.
 | :----- | :----- | :----- | :--------- |
 | `0.x`  | `2.33` | `3.14` | `>=1.3,<2` |
 
+Compatible with and tested against Pants `2.33.2`.
+
 Pants loads plugins into its own interpreter, so the plugin requires the Python version Pants runs on. The
 packages being wrapped may target any Python version.
 

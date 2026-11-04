@@ -4,8 +4,8 @@
     "CPython<3.15,>=3.14"
   ],
   "generated_with_requirements": [
-    "pantsbuild.pants.testutil==2.33.1",
-    "pantsbuild.pants==2.33.1",
+    "pantsbuild.pants.testutil==2.33.2",
+    "pantsbuild.pants==2.33.2",
     "pytest<9,>=8.4"
   ],
   "manylinux": "manylinux2014",
