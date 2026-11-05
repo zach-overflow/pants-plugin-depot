@@ -96,6 +96,8 @@ from pants_plugin_developer_utils.testing_utils import rule_runner_factory  # no
 | :------ | :----- | :----- |
 | `0.x`   | `2.33` | `3.14` |
 
+Compatible with and tested against Pants `2.33.2`.
+
 ## Releases
 
 Wheels are published to [PyPI](https://pypi.org/project/pants-plugin-developer-utils/). Release notes live in

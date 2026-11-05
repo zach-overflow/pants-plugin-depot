@@ -18,7 +18,7 @@ backend_packages = [
   "typos_pants_plugin",
   "vcs_versioning_pants_plugin",
 ]
-pants_version = "2.33.1"
+pants_version = "2.33.2"
 # https://www.pantsbuild.org/stable/docs/writing-plugins/overview#in-repo-plugins
 pythonpath = [
   "%(buildroot)s/provides/actionlint-pants-plugin/src",

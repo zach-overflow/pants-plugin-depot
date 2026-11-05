@@ -154,6 +154,8 @@ The `[vcs-versioning]` subsystem installs `vcs-versioning` from a lockfile bundl
 | :----- | :----- | :----- | :--------------- |
 | `0.x`  | `2.33` | `3.14` | `>=2.5,<3`       |
 
+Compatible with and tested against Pants `2.33.2`.
+
 Pants loads plugins into its own interpreter, so the plugin requires the Python version Pants runs on. The
 versioned code may target any Python version.
 

@@ -95,6 +95,8 @@ Compute each line with `curl -L $URL | tee >(wc -c) >(shasum -a 256) >/dev/null`
 | :----- | :----- | :----- | :----------- |
 | `0.x`  | `2.33` | `3.14` | `>=1.7,<2`   |
 
+Compatible with and tested against Pants `2.33.2`.
+
 Pants loads plugins into its own interpreter, so the plugin requires the Python version Pants runs on.
 
 ## Releases

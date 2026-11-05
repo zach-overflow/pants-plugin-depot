@@ -83,6 +83,8 @@ pants generate-lockfiles --resolve=maturin
 | :----- | :----- | :----- |
 | `0.x`  | `2.33` | `3.14` |
 
+Compatible with and tested against Pants `2.33.2`.
+
 Pants loads plugins into its own interpreter, so the plugin requires the Python version Pants runs on.
 
 ## Releases
