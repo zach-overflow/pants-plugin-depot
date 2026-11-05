@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [oras-pants-plugin-v0.3.3](https://github.com/zach-overflow/pants-plugin-depot/compare/8e363ccf61b9bfaad5492844b1acae01bdf55b4b..oras-pants-plugin-v0.3.3) - 2026-11-05
+
+#### Bug Fixes
+
+- (**deps**) Upgrade `pants` to 2.33.2 for CA security patch (#44) - ([8e363cc](https://github.com/zach-overflow/pants-plugin-depot/commit/8e363ccf61b9bfaad5492844b1acae01bdf55b4b)) - [@zach-overflow](https://github.com/zach-overflow)
+
+- - -
+
 ## [oras-pants-plugin-v0.3.2](https://github.com/zach-overflow/pants-plugin-depot/compare/be80c57c16fbf8e47432c12b1be0be5f54bbc545..oras-pants-plugin-v0.3.2) - 2026-10-17
 
 #### Bug Fixes

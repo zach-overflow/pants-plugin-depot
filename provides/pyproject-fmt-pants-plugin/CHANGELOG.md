@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [pyproject-fmt-pants-plugin-v0.4.5](https://github.com/zach-overflow/pants-plugin-depot/compare/8e363ccf61b9bfaad5492844b1acae01bdf55b4b..pyproject-fmt-pants-plugin-v0.4.5) - 2026-11-05
+
+#### Bug Fixes
+
+- (**deps**) Upgrade `pants` to 2.33.2 for CA security patch (#44) - ([8e363cc](https://github.com/zach-overflow/pants-plugin-depot/commit/8e363ccf61b9bfaad5492844b1acae01bdf55b4b)) - [@zach-overflow](https://github.com/zach-overflow)
+
+- - -
+
 ## [pyproject-fmt-pants-plugin-v0.4.4](https://github.com/zach-overflow/pants-plugin-depot/compare/2fd7f291b0f2bf6891e5b584e980c546f32f3eae..pyproject-fmt-pants-plugin-v0.4.4) - 2026-10-21
 
 #### Bug Fixes

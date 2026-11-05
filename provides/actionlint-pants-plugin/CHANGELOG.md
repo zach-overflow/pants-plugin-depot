@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [actionlint-pants-plugin-v0.1.4](https://github.com/zach-overflow/pants-plugin-depot/compare/8e363ccf61b9bfaad5492844b1acae01bdf55b4b..actionlint-pants-plugin-v0.1.4) - 2026-11-05
+
+#### Bug Fixes
+
+- (**deps**) Upgrade `pants` to 2.33.2 for CA security patch (#44) - ([8e363cc](https://github.com/zach-overflow/pants-plugin-depot/commit/8e363ccf61b9bfaad5492844b1acae01bdf55b4b)) - [@zach-overflow](https://github.com/zach-overflow)
+
+- - -
+
 ## [actionlint-pants-plugin-v0.1.3](https://github.com/zach-overflow/pants-plugin-depot/compare/3c1ef13a6b9c64ed86ae1b54955d71ecf9ecf2da..actionlint-pants-plugin-v0.1.3) - 2026-10-17
 
 #### Bug Fixes
